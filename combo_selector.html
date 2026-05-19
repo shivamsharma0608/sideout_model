@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UCSD WVB · Lineup Builder</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:    #002147;
+  --navy2:   #00264f;
+  --gold:    #C69214;
+  --gold2:   #e8aa1a;
+  --blue:    #00629B;
+  --bg:      #0b1724;
+  --surf:    #0f2035;
+  --surf2:   #152840;
+  --border:  #1c3550;
+  --text:    #dce8f5;
+  --muted:   #5a7a99;
+  --dim:     #2a4560;
+  --green:   #22c55e;
+  --amber:   #fbbf24;
+  --red:     #f87171;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── HEADER ── */
+header {
+  background: var(--navy);
+  border-bottom: 1px solid var(--border);
+  padding: 0 2rem;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brand {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.4rem;
+  color: var(--gold);
+  letter-spacing: .06em;
+}
+
+.brand span { color: rgba(255,255,255,.5); font-size: .9rem; margin-left: .5rem; letter-spacing: .12em; }
+
+.avg-chip {
+  font-size: .75rem;
+  color: var(--muted);
+  background: rgba(198,146,20,.08);
+  border: 1px solid rgba(198,146,20,.2);
+  border-radius: 20px;
+  padding: .25rem .9rem;
+}
+.avg-chip strong { color: var(--gold); }
+
+/* ── SCORE DISPLAY ── */
+.score-bar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--navy2);
+  border-bottom: 1px solid var(--border);
+  padding: 1.4rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2.5rem;
+  transition: background .3s;
+}
+
+.score-bar.has-result { background: var(--navy); }
+
+.score-main {
+  text-align: center;
+}
+
+.score-pct {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 4.5rem;
+  line-height: 1;
+  letter-spacing: .02em;
+  color: var(--dim);
+  transition: color .3s, transform .2s;
+}
+
+.score-pct.lit { transform: scale(1.04); }
+
+.score-label {
+  font-size: .68rem;
+  font-weight: 600;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: .15rem;
+}
+
+.score-meta {
+  font-size: .78rem;
+  color: var(--muted);
+  min-height: 1.1rem;
+  text-align: center;
+  margin-top: .25rem;
+}
+
+.score-meta strong { color: var(--text); }
+
+.score-context {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+
+.ctx-chip {
+  font-size: .75rem;
+  padding: .3rem .85rem;
+  border-radius: 20px;
+  background: var(--surf2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.ctx-chip.selected {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: rgba(198,146,20,.08);
+}
+
+.vs-avg {
+  font-size: .8rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.vs-avg.above { color: var(--green); }
+.vs-avg.below { color: var(--red); }
+
+/* ── CLEAR BTN ── */
+.clear-btn {
+  position: absolute;
+  right: 2rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size: .75rem;
+  padding: .4rem .85rem;
+  cursor: pointer;
+  transition: all .15s;
+}
+.clear-btn:hover { border-color: var(--red); color: var(--red); }
+
+/* ── COLUMNS LAYOUT ── */
+.columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0;
+  min-height: calc(100vh - 58px - 120px);
+}
+
+.col {
+  border-right: 1px solid var(--border);
+  padding: 1.5rem 1.25rem;
+}
+.col:last-child { border-right: none; }
+
+.col-header {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.col-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .85rem;
+  flex-shrink: 0;
+}
+
+.col-icon.passer  { background: rgba(0,98,155,.18); }
+.col-icon.setter  { background: rgba(198,146,20,.15); }
+.col-icon.hitter  { background: rgba(34,197,94,.12); }
+
+.col-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.1rem;
+  letter-spacing: .06em;
+}
+
+.col-title.passer { color: #5ab4f5; }
+.col-title.setter { color: var(--gold); }
+.col-title.hitter { color: var(--green); }
+
+.col-sub {
+  font-size: .68rem;
+  color: var(--muted);
+  margin-left: auto;
+  text-align: right;
+  line-height: 1.4;
+}
+
+/* ── PLAYER CARDS ── */
+.player-list {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+
+.pcard {
+  display: flex;
+  align-items: center;
+  gap: .85rem;
+  padding: .75rem .9rem;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background: var(--surf);
+  cursor: pointer;
+  transition: all .15s;
+  position: relative;
+  overflow: hidden;
+}
+
+.pcard::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: transparent;
+  transition: background .15s;
+}
+
+.pcard:hover {
+  border-color: var(--blue);
+  background: var(--surf2);
+}
+
+.pcard:hover::before { background: var(--blue); }
+
+.pcard.selected { background: var(--surf2); }
+.pcard.selected.passer-sel  { border-color: #5ab4f5; }
+.pcard.selected.setter-sel  { border-color: var(--gold); }
+.pcard.selected.hitter-sel  { border-color: var(--green); }
+.pcard.selected.passer-sel::before  { background: #5ab4f5; }
+.pcard.selected.setter-sel::before  { background: var(--gold); }
+.pcard.selected.hitter-sel::before  { background: var(--green); }
+
+.pcard.dimmed {
+  opacity: .35;
+  pointer-events: none;
+}
+
+.avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1rem;
+  flex-shrink: 0;
+  transition: all .15s;
+}
+
+.avatar.passer { background: linear-gradient(135deg, #003d6b, #00629B); color: #5ab4f5; }
+.avatar.setter { background: linear-gradient(135deg, #4a3200, #8a5800); color: var(--gold2); }
+.avatar.hitter { background: linear-gradient(135deg, #0a3320, #0f5a30); color: var(--green); }
+
+.pcard-info { flex: 1; min-width: 0; }
+
+.pcard-name {
+  font-size: .84rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pcard-stat {
+  font-size: .7rem;
+  color: var(--muted);
+  margin-top: .15rem;
+}
+
+.pcard-rate {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.3rem;
+  flex-shrink: 0;
+  transition: color .15s;
+}
+
+.check-icon {
+  display: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+  font-size: .6rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.pcard.selected .check-icon { display: flex; }
+.pcard.selected.passer-sel .check-icon { background: #5ab4f5; color: var(--navy); }
+.pcard.selected.setter-sel .check-icon { background: var(--gold); color: var(--navy); }
+.pcard.selected.hitter-sel .check-icon { background: var(--green); color: var(--navy); }
+
+/* ── HITTER NOTE ── */
+.hitter-note {
+  font-size: .72rem;
+  color: var(--muted);
+  text-align: center;
+  padding: 1.5rem 1rem;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  line-height: 1.5;
+  display: none;
+}
+
+.hitter-note.visible { display: block; }
+
+/* ── RATE COLOR CLASSES ── */
+.rate-hot  { color: var(--green); }
+.rate-warm { color: #4ade80; }
+.rate-mid  { color: var(--amber); }
+.rate-cool { color: var(--red); }
+
+@media (max-width: 700px) {
+  .columns { grid-template-columns: 1fr; }
+  .col { border-right: none; border-bottom: 1px solid var(--border); }
+  .score-pct { font-size: 3rem; }
+  .score-bar { flex-wrap: wrap; gap: .75rem; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">UCSD WVB <span>LINEUP BUILDER</span></div>
+  <div class="avg-chip">Team avg: <strong>56.6%</strong></div>
+</header>
+
+<!-- LIVE SCORE BAR -->
+<div class="score-bar" id="scoreBar">
+  <div class="score-context" id="ctxLeft">
+    <div class="ctx-chip" id="ctxPasser">Passer: —</div>
+    <div class="ctx-chip" id="ctxSetter">Setter: —</div>
+  </div>
+
+  <div class="score-main">
+    <div class="score-pct" id="scorePct">—</div>
+    <div class="score-label">Expected Side-Out %</div>
+    <div class="score-meta" id="scoreMeta">Select a passer &amp; setter to begin</div>
+    <div class="vs-avg" id="vsAvg"></div>
+  </div>
+
+  <div class="score-context" id="ctxRight">
+    <div class="ctx-chip" id="ctxHitter">Hitter: —</div>
+    <div class="ctx-chip" id="ctxRec">Receptions: —</div>
+  </div>
+
+  <button class="clear-btn" onclick="clearAll()">✕ Reset</button>
+</div>
+
+<!-- THREE COLUMNS -->
+<div class="columns">
+
+  <!-- PASSER -->
+  <div class="col">
+    <div class="col-header">
+      <div class="col-icon passer">🫳</div>
+      <div>
+        <div class="col-title passer">Passer</div>
+      </div>
+      <div class="col-sub">Click to select</div>
+    </div>
+    <div class="player-list" id="passerList"></div>
+  </div>
+
+  <!-- SETTER -->
+  <div class="col">
+    <div class="col-header">
+      <div class="col-icon setter">🎯</div>
+      <div>
+        <div class="col-title setter">Setter</div>
+      </div>
+      <div class="col-sub">Click to select</div>
+    </div>
+    <div class="player-list" id="setterList"></div>
+  </div>
+
+  <!-- HITTER -->
+  <div class="col">
+    <div class="col-header">
+      <div class="col-icon hitter">⚡</div>
+      <div>
+        <div class="col-title hitter">Hitter</div>
+      </div>
+      <div class="col-sub">Optional</div>
+    </div>
+    <div class="hitter-note" id="hitterNote">
+      Select a passer &amp; setter first to see<br>available hitter combinations
+    </div>
+    <div class="player-list" id="hitterList"></div>
+  </div>
+
+</div>
+
+<script>
+const TEAM_AVG = 56.6;
+
+// ── All passer/setter xSO data ──
+const PASSER_SETTER = [
+  {passer:"Molly McCluskey",  setter:"Maija Nepszy", n:8,   sideouts:7,  xso:87.5},
+  {passer:"Mina Olgar",       setter:"Mika Rome",    n:6,   sideouts:5,  xso:83.3},
+  {passer:"Katie Rapp",       setter:"Maija Nepszy", n:8,   sideouts:6,  xso:75.0},
+  {passer:"Maria Fernanda Afonso", setter:"Maija Nepszy", n:78, sideouts:51, xso:65.4},
+  {passer:"Kayla Uhlick",     setter:"Mika Rome",    n:124, sideouts:78, xso:62.9},
+  {passer:"Iris Canko",       setter:"Maija Nepszy", n:8,   sideouts:5,  xso:62.5},
+  {passer:"Ireland McNees",   setter:"Mika Rome",    n:147, sideouts:89, xso:60.5},
+  {passer:"Ireland McNees",   setter:"Maija Nepszy", n:129, sideouts:78, xso:60.5},
+  {passer:"Kayla Uhlick",     setter:"Maija Nepszy", n:129, sideouts:76, xso:58.9},
+  {passer:"Iris Canko",       setter:"Mika Rome",    n:52,  sideouts:29, xso:55.8},
+  {passer:"Molly McCluskey",  setter:"Mika Rome",    n:9,   sideouts:5,  xso:55.6},
+  {passer:"Paulina Baillie",  setter:"Mika Rome",    n:141, sideouts:75, xso:53.2},
+  {passer:"Stefania Alupei",  setter:"Maija Nepszy", n:55,  sideouts:29, xso:52.7},
+  {passer:"Paulina Baillie",  setter:"Maija Nepszy", n:151, sideouts:79, xso:52.3},
+  {passer:"Madison Johnson",  setter:"Mika Rome",    n:6,   sideouts:3,  xso:50.0},
+  {passer:"Maria Fernanda Afonso", setter:"Mika Rome", n:90, sideouts:44, xso:48.9},
+];
+
+// ── Full passer/setter/hitter trios ──
+const PSH = [
+  {passer:"Ireland McNees",   setter:"Mika Rome",    hitter:"Mina Olgar",            n:17, sideouts:17, xso:100.0},
+  {passer:"Ireland McNees",   setter:"Mika Rome",    hitter:"Madison Johnson",        n:13, sideouts:11, xso:84.6},
+  {passer:"Ireland McNees",   setter:"Maija Nepszy", hitter:"Stefania Alupei",        n:12, sideouts:10, xso:83.3},
+  {passer:"Ireland McNees",   setter:"Maija Nepszy", hitter:"Maija Nepszy",           n:6,  sideouts:5,  xso:83.3},
+  {passer:"Kayla Uhlick",     setter:"Mika Rome",    hitter:"Mika Rome",              n:6,  sideouts:5,  xso:83.3},
+  {passer:"Stefania Alupei",  setter:"Maija Nepszy", hitter:"Madison Johnson",        n:6,  sideouts:5,  xso:83.3},
+  {passer:"Ireland McNees",   setter:"Maija Nepszy", hitter:"Jasmine Saran",          n:28, sideouts:23, xso:82.1},
+  {passer:"Maria Fernanda Afonso", setter:"Maija Nepszy", hitter:"Madison Johnson",   n:5,  sideouts:4,  xso:80.0},
+  {passer:"Maria Fernanda Afonso", setter:"Mika Rome",    hitter:"Mina Olgar",        n:5,  sideouts:4,  xso:80.0},
+  {passer:"Mina Olgar",       setter:"Mika Rome",    hitter:"Maria Fernanda Afonso",  n:5,  sideouts:4,  xso:80.0},
+  {passer:"Kayla Uhlick",     setter:"Mika Rome",    hitter:"Molly McCluskey",        n:27, sideouts:21, xso:77.8},
+  {passer:"Paulina Baillie",  setter:"Maija Nepszy", hitter:"Molly McCluskey",        n:32, sideouts:24, xso:75.0},
+  {passer:"Ireland McNees",   setter:"Maija Nepszy", hitter:"Ireland McNees",         n:14, sideouts:10, xso:71.4},
+  {passer:"Paulina Baillie",  setter:"Mika Rome",    hitter:"Mika Rome",              n:7,  sideouts:5,  xso:71.4},
+  {passer:"Maria Fernanda Afonso", setter:"Maija Nepszy", hitter:"Molly McCluskey",   n:17, sideouts:12, xso:70.6},
+  {passer:"Kayla Uhlick",     setter:"Maija Nepszy", hitter:"Maria Fernanda Afonso",  n:13, sideouts:9,  xso:69.2},
+  {passer:"Kayla Uhlick",     setter:"Maija Nepszy", hitter:"Jasmine Saran",          n:29, sideouts:20, xso:69.0},
+  {passer:"Paulina Baillie",  setter:"Mika Rome",    hitter:"Jasmine Saran",          n:15, sideouts:10, xso:66.7},
+  {passer:"Stefania Alupei",  setter:"Maija Nepszy", hitter:"Maria Fernanda Afonso",  n:9,  sideouts:6,  xso:66.7},
+  {passer:"Kayla Uhlick",     setter:"Maija Nepszy", hitter:"Molly McCluskey",        n:38, sideouts:25, xso:65.8},
+  {passer:"Paulina Baillie",  setter:"Mika Rome",    hitter:"Molly McCluskey",        n:39, sideouts:25, xso:64.1},
+  {passer:"Maria Fernanda Afonso", setter:"Maija Nepszy", hitter:"Maria Fernanda Afonso", n:33, sideouts:21, xso:63.6},
+  {passer:"Ireland McNees",   setter:"Mika Rome",    hitter:"Maria Fernanda Afonso",  n:38, sideouts:24, xso:63.2},
+  {passer:"Kayla Uhlick",     setter:"Mika Rome",    hitter:"Ireland McNees",         n:54, sideouts:34, xso:63.0},
+  {passer:"Maria Fernanda Afonso", setter:"Maija Nepszy", hitter:"Jasmine Saran",     n:8,  sideouts:5,  xso:62.5},
+  {passer:"Paulina Baillie",  setter:"Mika Rome",    hitter:"Madison Johnson",        n:8,  sideouts:5,  xso:62.5},
+  {passer:"Iris Canko",       setter:"Mika Rome",    hitter:"Jasmine Saran",          n:10, sideouts:6,  xso:60.0},
+  {passer:"Kayla Uhlick",     setter:"Mika Rome",    hitter:"Maria Fernanda Afonso",  n:10, sideouts:6,  xso:60.0},
+  {passer:"Maria Fernanda Afonso", setter:"Mika Rome",    hitter:"Jasmine Saran",     n:10, sideouts:6,  xso:60.0},
+  {passer:"Ireland McNees",   setter:"Maija Nepszy", hitter:"Maria Fernanda Afonso",  n:12, sideouts:7,  xso:58.3},
+  {passer:"Maria Fernanda Afonso", setter:"Mika Rome",    hitter:"Maria Fernanda Afonso", n:25, sideouts:14, xso:56.0},
+  {passer:"Paulina Baillie",  setter:"Mika Rome",    hitter:"Maria Fernanda Afonso",  n:13, sideouts:7,  xso:53.8},
+  {passer:"Iris Canko",       setter:"Mika Rome",    hitter:"Maria Fernanda Afonso",  n:32, sideouts:17, xso:53.1},
+  {passer:"Kayla Uhlick",     setter:"Mika Rome",    hitter:"Madison Johnson",        n:19, sideouts:10, xso:52.6},
+  {passer:"Ireland McNees",   setter:"Mika Rome",    hitter:"Molly McCluskey",        n:42, sideouts:22, xso:52.4},
+  {passer:"Paulina Baillie",  setter:"Maija Nepszy", hitter:"Maria Fernanda Afonso",  n:16, sideouts:8,  xso:50.0},
+  {passer:"Stefania Alupei",  setter:"Maija Nepszy", hitter:"Jasmine Saran",          n:16, sideouts:8,  xso:50.0},
+  {passer:"Ireland McNees",   setter:"Mika Rome",    hitter:"Ireland McNees",         n:12, sideouts:6,  xso:50.0},
+  {passer:"Paulina Baillie",  setter:"Maija Nepszy", hitter:"Stefania Alupei",        n:10, sideouts:5,  xso:50.0},
+  {passer:"Paulina Baillie",  setter:"Maija Nepszy", hitter:"Jasmine Saran",          n:35, sideouts:17, xso:48.6},
+  {passer:"Paulina Baillie",  setter:"Maija Nepszy", hitter:"Ireland McNees",         n:26, sideouts:12, xso:46.2},
+  {passer:"Ireland McNees",   setter:"Maija Nepszy", hitter:"Molly McCluskey",        n:35, sideouts:16, xso:45.7},
+  {passer:"Paulina Baillie",  setter:"Maija Nepszy", hitter:"Katie Rapp",             n:11, sideouts:5,  xso:45.5},
+  {passer:"Maria Fernanda Afonso", setter:"Mika Rome",    hitter:"Molly McCluskey",   n:27, sideouts:12, xso:44.4},
+  {passer:"Ireland McNees",   setter:"Maija Nepszy", hitter:"Katie Rapp",             n:9,  sideouts:4,  xso:44.4},
+  {passer:"Kayla Uhlick",     setter:"Maija Nepszy", hitter:"Ireland McNees",         n:32, sideouts:14, xso:43.8},
+  {passer:"Ireland McNees",   setter:"Mika Rome",    hitter:"Jasmine Saran",          n:16, sideouts:7,  xso:43.8},
+  {passer:"Paulina Baillie",  setter:"Mika Rome",    hitter:"Ireland McNees",         n:47, sideouts:19, xso:40.4},
+  {passer:"Maria Fernanda Afonso", setter:"Mika Rome",    hitter:"Ireland McNees",    n:12, sideouts:4,  xso:33.3},
+  {passer:"Paulina Baillie",  setter:"Maija Nepszy", hitter:"Madison Johnson",        n:9,  sideouts:3,  xso:33.3},
+  {passer:"Stefania Alupei",  setter:"Maija Nepszy", hitter:"Molly McCluskey",        n:7,  sideouts:2,  xso:28.6},
+  {passer:"Ireland McNees",   setter:"Maija Nepszy", hitter:"Madison Johnson",        n:4,  sideouts:1,  xso:25.0},
+  {passer:"Paulina Baillie",  setter:"Mika Rome",    hitter:"Mina Olgar",             n:5,  sideouts:1,  xso:20.0},
+];
+
+// ── Derived player lists ──
+const PASSERS = [...new Set(PASSER_SETTER.map(x => x.passer))].sort();
+const SETTERS = ['Maija Nepszy', 'Mika Rome'];
+
+// Per-player overall stats for the card subtitle
+const passerStats = {};
+PASSER_SETTER.forEach(x => {
+  if (!passerStats[x.passer]) passerStats[x.passer] = {n:0, sideouts:0};
+  passerStats[x.passer].n += x.n;
+  passerStats[x.passer].sideouts += x.sideouts;
+});
+
+const setterStats = {
+  'Maija Nepszy': {n:569, sideouts:334, xso:58.7},
+  'Mika Rome':    {n:582, sideouts:332, xso:57.0},
+};
+
+// ── State ──
+let selPasser = null, selSetter = null, selHitter = null;
+
+// ── Helpers ──
+function initials(name) { return name.split(' ').map(w=>w[0]).slice(0,2).join(''); }
+
+function rateColor(v) {
+  if (v >= 70) return 'rate-hot';
+  if (v >= 58) return 'rate-warm';
+  if (v >= 50) return 'rate-mid';
+  return 'rate-cool';
+}
+
+function rateHex(v) {
+  if (v >= 70) return '#22c55e';
+  if (v >= 58) return '#4ade80';
+  if (v >= 50) return '#fbbf24';
+  return '#f87171';
+}
+
+// ── Build columns ──
+function buildPassers() {
+  const list = document.getElementById('passerList');
+  PASSERS.forEach(name => {
+    const st = passerStats[name] || {n:0, sideouts:0};
+    const xso = st.n > 0 ? (st.sideouts / st.n * 100) : 0;
+    const card = makeCard(name, 'passer', xso, st.n + ' receptions');
+    card.addEventListener('click', () => selectPasser(name));
+    list.appendChild(card);
+  });
+}
+
+function buildSetters() {
+  const list = document.getElementById('setterList');
+  SETTERS.forEach(name => {
+    const st = setterStats[name];
+    const card = makeCard(name, 'setter', st.xso, st.n + ' receptions');
+    card.addEventListener('click', () => selectSetter(name));
+    list.appendChild(card);
+  });
+}
+
+function buildHitters(passer, setter) {
+  const list = document.getElementById('hitterList');
+  const note = document.getElementById('hitterNote');
+  list.innerHTML = '';
+
+  const combos = PSH.filter(x => x.passer === passer && x.setter === setter)
+    .sort((a,b) => b.xso - a.xso);
+
+  if (!combos.length) {
+    note.classList.add('visible');
+    return;
+  }
+
+  note.classList.remove('visible');
+
+  combos.forEach(row => {
+    const card = makeCard(row.hitter, 'hitter', row.xso, row.n + ' recs · ' + row.sideouts + ' sideouts');
+    card.setAttribute('data-hitter', row.hitter);
+    card.addEventListener('click', () => selectHitter(row.hitter));
+    list.appendChild(card);
+  });
+}
+
+function makeCard(name, role, xso, sub) {
+  const div = document.createElement('div');
+  div.className = 'pcard';
+  div.setAttribute('data-name', name);
+  div.innerHTML = `
+    <div class="avatar ${role}">${initials(name)}</div>
+    <div class="pcard-info">
+      <div class="pcard-name">${name}</div>
+      <div class="pcard-stat">${sub}</div>
+    </div>
+    <div class="pcard-rate ${rateColor(xso)}">${xso.toFixed(1)}%</div>
+    <div class="check-icon">✓</div>
+  `;
+  return div;
+}
+
+// ── Selection logic ──
+function selectPasser(name) {
+  selPasser = selPasser === name ? null : name;
+  selHitter = null;
+  refreshAll();
+}
+
+function selectSetter(name) {
+  selSetter = selSetter === name ? null : name;
+  selHitter = null;
+  refreshAll();
+}
+
+function selectHitter(name) {
+  selHitter = selHitter === name ? null : name;
+  refreshScore();
+  highlightHitters();
+}
+
+function clearAll() {
+  selPasser = selSetter = selHitter = null;
+  refreshAll();
+}
+
+function refreshAll() {
+  highlightPassers();
+  highlightSetters();
+
+  if (selPasser && selSetter) {
+    buildHitters(selPasser, selSetter);
+    highlightHitters();
+  } else {
+    document.getElementById('hitterList').innerHTML = '';
+    document.getElementById('hitterNote').classList.add('visible');
+  }
+
+  refreshScore();
+}
+
+function highlightPassers() {
+  document.querySelectorAll('#passerList .pcard').forEach(card => {
+    const name = card.getAttribute('data-name');
+    card.classList.toggle('selected', name === selPasser);
+    card.classList.toggle('passer-sel', name === selPasser);
+  });
+}
+
+function highlightSetters() {
+  document.querySelectorAll('#setterList .pcard').forEach(card => {
+    const name = card.getAttribute('data-name');
+    card.classList.toggle('selected', name === selSetter);
+    card.classList.toggle('setter-sel', name === selSetter);
+  });
+}
+
+function highlightHitters() {
+  document.querySelectorAll('#hitterList .pcard').forEach(card => {
+    const name = card.getAttribute('data-name');
+    card.classList.toggle('selected', name === selHitter);
+    card.classList.toggle('hitter-sel', name === selHitter);
+  });
+}
+
+function refreshScore() {
+  const pctEl   = document.getElementById('scorePct');
+  const metaEl  = document.getElementById('scoreMeta');
+  const vsEl    = document.getElementById('vsAvg');
+  const bar     = document.getElementById('scoreBar');
+  const ctxP    = document.getElementById('ctxPasser');
+  const ctxS    = document.getElementById('ctxSetter');
+  const ctxH    = document.getElementById('ctxHitter');
+  const ctxR    = document.getElementById('ctxRec');
+
+  ctxP.textContent = selPasser ? 'Pass: ' + selPasser.split(' ')[0] : 'Passer: —';
+  ctxS.textContent = selSetter ? 'Set: '  + selSetter.split(' ')[0] : 'Setter: —';
+  ctxH.textContent = selHitter ? 'Hit: '  + selHitter.split(' ')[0] : 'Hitter: —';
+  ctxP.classList.toggle('selected', !!selPasser);
+  ctxS.classList.toggle('selected', !!selSetter);
+  ctxH.classList.toggle('selected', !!selHitter);
+
+  if (!selPasser && !selSetter) {
+    pctEl.textContent = '—';
+    pctEl.style.color = 'var(--dim)';
+    metaEl.innerHTML = 'Select a passer &amp; setter to begin';
+    vsEl.textContent = '';
+    ctxR.textContent = 'Receptions: —';
+    ctxR.classList.remove('selected');
+    bar.classList.remove('has-result');
+    return;
+  }
+
+  // Trio lookup first
+  let row = null;
+  if (selPasser && selSetter && selHitter) {
+    row = PSH.find(x => x.passer===selPasser && x.setter===selSetter && x.hitter===selHitter);
+  }
+  // Fall back to passer+setter
+  if (!row && selPasser && selSetter) {
+    row = PASSER_SETTER.find(x => x.passer===selPasser && x.setter===selSetter);
+  }
+  // Just one selected
+  if (!row && selPasser && !selSetter) {
+    const st = passerStats[selPasser];
+    if (st) {
+      const xso = (st.sideouts / st.n * 100);
+      pctEl.textContent = xso.toFixed(1) + '%';
+      pctEl.style.color = rateHex(xso);
+      metaEl.innerHTML = `<strong>${selPasser}</strong> · overall passing average`;
+      const diff = xso - TEAM_AVG;
+      vsEl.textContent = (diff>=0?'+':'')+diff.toFixed(1)+'pp vs team avg';
+      vsEl.className = 'vs-avg ' + (diff>=0?'above':'below');
+      ctxR.textContent = st.n + ' receptions';
+      ctxR.classList.add('selected');
+      bar.classList.add('has-result');
+    }
+    return;
+  }
+
+  if (!row) {
+    pctEl.textContent = '?';
+    pctEl.style.color = 'var(--muted)';
+    metaEl.innerHTML = 'No data for this combination';
+    vsEl.textContent = '';
+    ctxR.textContent = 'Receptions: —';
+    ctxR.classList.remove('selected');
+    return;
+  }
+
+  const xso = row.xso;
+  const diff = xso - TEAM_AVG;
+
+  pctEl.textContent = xso.toFixed(1) + '%';
+  pctEl.style.color = rateHex(xso);
+  pctEl.classList.add('lit');
+  setTimeout(() => pctEl.classList.remove('lit'), 200);
+
+  const who = selHitter
+    ? `<strong>${selPasser.split(' ')[0]}</strong> → <strong>${selSetter.split(' ')[0]}</strong> → <strong>${selHitter.split(' ')[0]}</strong>`
+    : `<strong>${selPasser.split(' ')[0]}</strong> passing to <strong>${selSetter.split(' ')[0]}</strong>`;
+  metaEl.innerHTML = who + ` · ${row.sideouts}/${row.n} sideouts`;
+
+  vsEl.textContent = (diff>=0?'+':'')+diff.toFixed(1)+'pp vs team avg';
+  vsEl.className   = 'vs-avg ' + (diff>=0?'above':'below');
+
+  ctxR.textContent = row.n + ' receptions';
+  ctxR.classList.add('selected');
+  bar.classList.add('has-result');
+}
+
+// ── Init ──
+buildPassers();
+buildSetters();
+document.getElementById('hitterNote').classList.add('visible');
+</script>
+</body>
+</html>
