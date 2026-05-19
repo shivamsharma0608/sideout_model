@@ -4,7 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>UCSD WVB · Lineup Builder</title>
+
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
 <style>
 :root {
   --navy:    #002147;
@@ -22,6 +25,7 @@
   --green:   #22c55e;
   --amber:   #fbbf24;
   --red:     #f87171;
+  --purple:  #a78bfa;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -52,7 +56,12 @@ header {
   letter-spacing: .06em;
 }
 
-.brand span { color: rgba(255,255,255,.5); font-size: .9rem; margin-left: .5rem; letter-spacing: .12em; }
+.brand span {
+  color: rgba(255,255,255,.5);
+  font-size: .9rem;
+  margin-left: .5rem;
+  letter-spacing: .12em;
+}
 
 .avg-chip {
   font-size: .75rem;
@@ -62,6 +71,7 @@ header {
   border-radius: 20px;
   padding: .25rem .9rem;
 }
+
 .avg-chip strong { color: var(--gold); }
 
 /* ── SCORE DISPLAY ── */
@@ -160,12 +170,16 @@ header {
   cursor: pointer;
   transition: all .15s;
 }
-.clear-btn:hover { border-color: var(--red); color: var(--red); }
+
+.clear-btn:hover {
+  border-color: var(--red);
+  color: var(--red);
+}
 
 /* ── COLUMNS LAYOUT ── */
 .columns {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 0.75fr 1fr 1fr 1fr;
   gap: 0;
   min-height: calc(100vh - 58px - 120px);
 }
@@ -174,6 +188,7 @@ header {
   border-right: 1px solid var(--border);
   padding: 1.5rem 1.25rem;
 }
+
 .col:last-child { border-right: none; }
 
 .col-header {
@@ -196,9 +211,10 @@ header {
   flex-shrink: 0;
 }
 
-.col-icon.passer  { background: rgba(0,98,155,.18); }
-.col-icon.setter  { background: rgba(198,146,20,.15); }
-.col-icon.hitter  { background: rgba(34,197,94,.12); }
+.col-icon.rotation { background: rgba(167,139,250,.13); }
+.col-icon.passer   { background: rgba(0,98,155,.18); }
+.col-icon.setter   { background: rgba(198,146,20,.15); }
+.col-icon.hitter   { background: rgba(34,197,94,.12); }
 
 .col-title {
   font-family: 'Bebas Neue', sans-serif;
@@ -206,9 +222,10 @@ header {
   letter-spacing: .06em;
 }
 
-.col-title.passer { color: #5ab4f5; }
-.col-title.setter { color: var(--gold); }
-.col-title.hitter { color: var(--green); }
+.col-title.rotation { color: var(--purple); }
+.col-title.passer   { color: #5ab4f5; }
+.col-title.setter   { color: var(--gold); }
+.col-title.hitter   { color: var(--green); }
 
 .col-sub {
   font-size: .68rem;
@@ -256,17 +273,16 @@ header {
 .pcard:hover::before { background: var(--blue); }
 
 .pcard.selected { background: var(--surf2); }
-.pcard.selected.passer-sel  { border-color: #5ab4f5; }
-.pcard.selected.setter-sel  { border-color: var(--gold); }
-.pcard.selected.hitter-sel  { border-color: var(--green); }
-.pcard.selected.passer-sel::before  { background: #5ab4f5; }
-.pcard.selected.setter-sel::before  { background: var(--gold); }
-.pcard.selected.hitter-sel::before  { background: var(--green); }
 
-.pcard.dimmed {
-  opacity: .35;
-  pointer-events: none;
-}
+.pcard.selected.rotation-sel { border-color: var(--purple); }
+.pcard.selected.passer-sel   { border-color: #5ab4f5; }
+.pcard.selected.setter-sel   { border-color: var(--gold); }
+.pcard.selected.hitter-sel   { border-color: var(--green); }
+
+.pcard.selected.rotation-sel::before { background: var(--purple); }
+.pcard.selected.passer-sel::before   { background: #5ab4f5; }
+.pcard.selected.setter-sel::before   { background: var(--gold); }
+.pcard.selected.hitter-sel::before   { background: var(--green); }
 
 .avatar {
   width: 42px;
@@ -281,9 +297,10 @@ header {
   transition: all .15s;
 }
 
-.avatar.passer { background: linear-gradient(135deg, #003d6b, #00629B); color: #5ab4f5; }
-.avatar.setter { background: linear-gradient(135deg, #4a3200, #8a5800); color: var(--gold2); }
-.avatar.hitter { background: linear-gradient(135deg, #0a3320, #0f5a30); color: var(--green); }
+.avatar.rotation { background: linear-gradient(135deg, #31205f, #5b3aaa); color: var(--purple); }
+.avatar.passer   { background: linear-gradient(135deg, #003d6b, #00629B); color: #5ab4f5; }
+.avatar.setter   { background: linear-gradient(135deg, #4a3200, #8a5800); color: var(--gold2); }
+.avatar.hitter   { background: linear-gradient(135deg, #0a3320, #0f5a30); color: var(--green); }
 
 .pcard-info { flex: 1; min-width: 0; }
 
@@ -322,9 +339,11 @@ header {
 }
 
 .pcard.selected .check-icon { display: flex; }
-.pcard.selected.passer-sel .check-icon { background: #5ab4f5; color: var(--navy); }
-.pcard.selected.setter-sel .check-icon { background: var(--gold); color: var(--navy); }
-.pcard.selected.hitter-sel .check-icon { background: var(--green); color: var(--navy); }
+
+.pcard.selected.rotation-sel .check-icon { background: var(--purple); color: var(--navy); }
+.pcard.selected.passer-sel .check-icon   { background: #5ab4f5; color: var(--navy); }
+.pcard.selected.setter-sel .check-icon   { background: var(--gold); color: var(--navy); }
+.pcard.selected.hitter-sel .check-icon   { background: var(--green); color: var(--navy); }
 
 /* ── HITTER NOTE ── */
 .hitter-note {
@@ -346,6 +365,10 @@ header {
 .rate-mid  { color: var(--amber); }
 .rate-cool { color: var(--red); }
 
+@media (max-width: 1000px) {
+  .columns { grid-template-columns: 1fr 1fr; }
+}
+
 @media (max-width: 700px) {
   .columns { grid-template-columns: 1fr; }
   .col { border-right: none; border-bottom: 1px solid var(--border); }
@@ -354,28 +377,30 @@ header {
 }
 </style>
 </head>
+
 <body>
 
 <header>
   <div class="brand">UCSD WVB <span>LINEUP BUILDER</span></div>
-  <div class="avg-chip">Team avg: <strong>56.6%</strong></div>
+  <div class="avg-chip">Team avg: <strong id="teamAvg">—</strong></div>
 </header>
 
 <!-- LIVE SCORE BAR -->
 <div class="score-bar" id="scoreBar">
   <div class="score-context" id="ctxLeft">
+    <div class="ctx-chip" id="ctxRotation">Rotation: —</div>
     <div class="ctx-chip" id="ctxPasser">Passer: —</div>
-    <div class="ctx-chip" id="ctxSetter">Setter: —</div>
   </div>
 
   <div class="score-main">
     <div class="score-pct" id="scorePct">—</div>
     <div class="score-label">Expected Side-Out %</div>
-    <div class="score-meta" id="scoreMeta">Select a passer &amp; setter to begin</div>
+    <div class="score-meta" id="scoreMeta">Loading CSV data...</div>
     <div class="vs-avg" id="vsAvg"></div>
   </div>
 
   <div class="score-context" id="ctxRight">
+    <div class="ctx-chip" id="ctxSetter">Setter: —</div>
     <div class="ctx-chip" id="ctxHitter">Hitter: —</div>
     <div class="ctx-chip" id="ctxRec">Receptions: —</div>
   </div>
@@ -383,8 +408,20 @@ header {
   <button class="clear-btn" onclick="clearAll()">✕ Reset</button>
 </div>
 
-<!-- THREE COLUMNS -->
+<!-- FOUR COLUMNS -->
 <div class="columns">
+
+  <!-- ROTATION -->
+  <div class="col">
+    <div class="col-header">
+      <div class="col-icon rotation">↻</div>
+      <div>
+        <div class="col-title rotation">Rotation</div>
+      </div>
+      <div class="col-sub">Optional</div>
+    </div>
+    <div class="player-list" id="rotationList"></div>
+  </div>
 
   <!-- PASSER -->
   <div class="col">
@@ -393,7 +430,7 @@ header {
       <div>
         <div class="col-title passer">Passer</div>
       </div>
-      <div class="col-sub">Click to select</div>
+      <div class="col-sub">Optional</div>
     </div>
     <div class="player-list" id="passerList"></div>
   </div>
@@ -405,7 +442,7 @@ header {
       <div>
         <div class="col-title setter">Setter</div>
       </div>
-      <div class="col-sub">Click to select</div>
+      <div class="col-sub">Optional</div>
     </div>
     <div class="player-list" id="setterList"></div>
   </div>
@@ -417,184 +454,317 @@ header {
       <div>
         <div class="col-title hitter">Hitter</div>
       </div>
-      <div class="col-sub">Optional</div>
+      <div class="col-sub">Requires passer + setter</div>
     </div>
-    <div class="hitter-note" id="hitterNote">
+
+    <div class="hitter-note visible" id="hitterNote">
       Select a passer &amp; setter first to see<br>available hitter combinations
     </div>
+
     <div class="player-list" id="hitterList"></div>
   </div>
 
 </div>
 
 <script>
-const TEAM_AVG = 56.6;
+/* -------------------------------------------------------
+   CSV FILE PATHS
+   Put these files inside a folder called data/
+------------------------------------------------------- */
 
-// ── All passer/setter xSO data ──
-const PASSER_SETTER = [
-  {passer:"Molly McCluskey",  setter:"Maija Nepszy", n:8,   sideouts:7,  xso:87.5},
-  {passer:"Mina Olgar",       setter:"Mika Rome",    n:6,   sideouts:5,  xso:83.3},
-  {passer:"Katie Rapp",       setter:"Maija Nepszy", n:8,   sideouts:6,  xso:75.0},
-  {passer:"Maria Fernanda Afonso", setter:"Maija Nepszy", n:78, sideouts:51, xso:65.4},
-  {passer:"Kayla Uhlick",     setter:"Mika Rome",    n:124, sideouts:78, xso:62.9},
-  {passer:"Iris Canko",       setter:"Maija Nepszy", n:8,   sideouts:5,  xso:62.5},
-  {passer:"Ireland McNees",   setter:"Mika Rome",    n:147, sideouts:89, xso:60.5},
-  {passer:"Ireland McNees",   setter:"Maija Nepszy", n:129, sideouts:78, xso:60.5},
-  {passer:"Kayla Uhlick",     setter:"Maija Nepszy", n:129, sideouts:76, xso:58.9},
-  {passer:"Iris Canko",       setter:"Mika Rome",    n:52,  sideouts:29, xso:55.8},
-  {passer:"Molly McCluskey",  setter:"Mika Rome",    n:9,   sideouts:5,  xso:55.6},
-  {passer:"Paulina Baillie",  setter:"Mika Rome",    n:141, sideouts:75, xso:53.2},
-  {passer:"Stefania Alupei",  setter:"Maija Nepszy", n:55,  sideouts:29, xso:52.7},
-  {passer:"Paulina Baillie",  setter:"Maija Nepszy", n:151, sideouts:79, xso:52.3},
-  {passer:"Madison Johnson",  setter:"Mika Rome",    n:6,   sideouts:3,  xso:50.0},
-  {passer:"Maria Fernanda Afonso", setter:"Mika Rome", n:90, sideouts:44, xso:48.9},
-];
+const FILES = {
+  passerSetter: "data/passer_setter_xso.csv",
+  setter: "data/setter_xso.csv",
+  setterHitter: "data/setter_hitter_xso.csv",
+  passerSetterHitter: "data/passer_setter_hitter_xso_all_combinations.csv",
 
-// ── Full passer/setter/hitter trios ──
-const PSH = [
-  {passer:"Ireland McNees",   setter:"Mika Rome",    hitter:"Mina Olgar",            n:17, sideouts:17, xso:100.0},
-  {passer:"Ireland McNees",   setter:"Mika Rome",    hitter:"Madison Johnson",        n:13, sideouts:11, xso:84.6},
-  {passer:"Ireland McNees",   setter:"Maija Nepszy", hitter:"Stefania Alupei",        n:12, sideouts:10, xso:83.3},
-  {passer:"Ireland McNees",   setter:"Maija Nepszy", hitter:"Maija Nepszy",           n:6,  sideouts:5,  xso:83.3},
-  {passer:"Kayla Uhlick",     setter:"Mika Rome",    hitter:"Mika Rome",              n:6,  sideouts:5,  xso:83.3},
-  {passer:"Stefania Alupei",  setter:"Maija Nepszy", hitter:"Madison Johnson",        n:6,  sideouts:5,  xso:83.3},
-  {passer:"Ireland McNees",   setter:"Maija Nepszy", hitter:"Jasmine Saran",          n:28, sideouts:23, xso:82.1},
-  {passer:"Maria Fernanda Afonso", setter:"Maija Nepszy", hitter:"Madison Johnson",   n:5,  sideouts:4,  xso:80.0},
-  {passer:"Maria Fernanda Afonso", setter:"Mika Rome",    hitter:"Mina Olgar",        n:5,  sideouts:4,  xso:80.0},
-  {passer:"Mina Olgar",       setter:"Mika Rome",    hitter:"Maria Fernanda Afonso",  n:5,  sideouts:4,  xso:80.0},
-  {passer:"Kayla Uhlick",     setter:"Mika Rome",    hitter:"Molly McCluskey",        n:27, sideouts:21, xso:77.8},
-  {passer:"Paulina Baillie",  setter:"Maija Nepszy", hitter:"Molly McCluskey",        n:32, sideouts:24, xso:75.0},
-  {passer:"Ireland McNees",   setter:"Maija Nepszy", hitter:"Ireland McNees",         n:14, sideouts:10, xso:71.4},
-  {passer:"Paulina Baillie",  setter:"Mika Rome",    hitter:"Mika Rome",              n:7,  sideouts:5,  xso:71.4},
-  {passer:"Maria Fernanda Afonso", setter:"Maija Nepszy", hitter:"Molly McCluskey",   n:17, sideouts:12, xso:70.6},
-  {passer:"Kayla Uhlick",     setter:"Maija Nepszy", hitter:"Maria Fernanda Afonso",  n:13, sideouts:9,  xso:69.2},
-  {passer:"Kayla Uhlick",     setter:"Maija Nepszy", hitter:"Jasmine Saran",          n:29, sideouts:20, xso:69.0},
-  {passer:"Paulina Baillie",  setter:"Mika Rome",    hitter:"Jasmine Saran",          n:15, sideouts:10, xso:66.7},
-  {passer:"Stefania Alupei",  setter:"Maija Nepszy", hitter:"Maria Fernanda Afonso",  n:9,  sideouts:6,  xso:66.7},
-  {passer:"Kayla Uhlick",     setter:"Maija Nepszy", hitter:"Molly McCluskey",        n:38, sideouts:25, xso:65.8},
-  {passer:"Paulina Baillie",  setter:"Mika Rome",    hitter:"Molly McCluskey",        n:39, sideouts:25, xso:64.1},
-  {passer:"Maria Fernanda Afonso", setter:"Maija Nepszy", hitter:"Maria Fernanda Afonso", n:33, sideouts:21, xso:63.6},
-  {passer:"Ireland McNees",   setter:"Mika Rome",    hitter:"Maria Fernanda Afonso",  n:38, sideouts:24, xso:63.2},
-  {passer:"Kayla Uhlick",     setter:"Mika Rome",    hitter:"Ireland McNees",         n:54, sideouts:34, xso:63.0},
-  {passer:"Maria Fernanda Afonso", setter:"Maija Nepszy", hitter:"Jasmine Saran",     n:8,  sideouts:5,  xso:62.5},
-  {passer:"Paulina Baillie",  setter:"Mika Rome",    hitter:"Madison Johnson",        n:8,  sideouts:5,  xso:62.5},
-  {passer:"Iris Canko",       setter:"Mika Rome",    hitter:"Jasmine Saran",          n:10, sideouts:6,  xso:60.0},
-  {passer:"Kayla Uhlick",     setter:"Mika Rome",    hitter:"Maria Fernanda Afonso",  n:10, sideouts:6,  xso:60.0},
-  {passer:"Maria Fernanda Afonso", setter:"Mika Rome",    hitter:"Jasmine Saran",     n:10, sideouts:6,  xso:60.0},
-  {passer:"Ireland McNees",   setter:"Maija Nepszy", hitter:"Maria Fernanda Afonso",  n:12, sideouts:7,  xso:58.3},
-  {passer:"Maria Fernanda Afonso", setter:"Mika Rome",    hitter:"Maria Fernanda Afonso", n:25, sideouts:14, xso:56.0},
-  {passer:"Paulina Baillie",  setter:"Mika Rome",    hitter:"Maria Fernanda Afonso",  n:13, sideouts:7,  xso:53.8},
-  {passer:"Iris Canko",       setter:"Mika Rome",    hitter:"Maria Fernanda Afonso",  n:32, sideouts:17, xso:53.1},
-  {passer:"Kayla Uhlick",     setter:"Mika Rome",    hitter:"Madison Johnson",        n:19, sideouts:10, xso:52.6},
-  {passer:"Ireland McNees",   setter:"Mika Rome",    hitter:"Molly McCluskey",        n:42, sideouts:22, xso:52.4},
-  {passer:"Paulina Baillie",  setter:"Maija Nepszy", hitter:"Maria Fernanda Afonso",  n:16, sideouts:8,  xso:50.0},
-  {passer:"Stefania Alupei",  setter:"Maija Nepszy", hitter:"Jasmine Saran",          n:16, sideouts:8,  xso:50.0},
-  {passer:"Ireland McNees",   setter:"Mika Rome",    hitter:"Ireland McNees",         n:12, sideouts:6,  xso:50.0},
-  {passer:"Paulina Baillie",  setter:"Maija Nepszy", hitter:"Stefania Alupei",        n:10, sideouts:5,  xso:50.0},
-  {passer:"Paulina Baillie",  setter:"Maija Nepszy", hitter:"Jasmine Saran",          n:35, sideouts:17, xso:48.6},
-  {passer:"Paulina Baillie",  setter:"Maija Nepszy", hitter:"Ireland McNees",         n:26, sideouts:12, xso:46.2},
-  {passer:"Ireland McNees",   setter:"Maija Nepszy", hitter:"Molly McCluskey",        n:35, sideouts:16, xso:45.7},
-  {passer:"Paulina Baillie",  setter:"Maija Nepszy", hitter:"Katie Rapp",             n:11, sideouts:5,  xso:45.5},
-  {passer:"Maria Fernanda Afonso", setter:"Mika Rome",    hitter:"Molly McCluskey",   n:27, sideouts:12, xso:44.4},
-  {passer:"Ireland McNees",   setter:"Maija Nepszy", hitter:"Katie Rapp",             n:9,  sideouts:4,  xso:44.4},
-  {passer:"Kayla Uhlick",     setter:"Maija Nepszy", hitter:"Ireland McNees",         n:32, sideouts:14, xso:43.8},
-  {passer:"Ireland McNees",   setter:"Mika Rome",    hitter:"Jasmine Saran",          n:16, sideouts:7,  xso:43.8},
-  {passer:"Paulina Baillie",  setter:"Mika Rome",    hitter:"Ireland McNees",         n:47, sideouts:19, xso:40.4},
-  {passer:"Maria Fernanda Afonso", setter:"Mika Rome",    hitter:"Ireland McNees",    n:12, sideouts:4,  xso:33.3},
-  {passer:"Paulina Baillie",  setter:"Maija Nepszy", hitter:"Madison Johnson",        n:9,  sideouts:3,  xso:33.3},
-  {passer:"Stefania Alupei",  setter:"Maija Nepszy", hitter:"Molly McCluskey",        n:7,  sideouts:2,  xso:28.6},
-  {passer:"Ireland McNees",   setter:"Maija Nepszy", hitter:"Madison Johnson",        n:4,  sideouts:1,  xso:25.0},
-  {passer:"Paulina Baillie",  setter:"Mika Rome",    hitter:"Mina Olgar",             n:5,  sideouts:1,  xso:20.0},
-];
+  hitterGivenRotation: "data/hitter_given_rotation_expected_sideout.csv",
+  setterGivenRotation: "data/setter_given_rotation_expected_sideout.csv",
+  setterHitterGivenRotation: "data/setter_hitter_given_rotation_expected_sideout.csv",
+  hitterPasserGivenRotation: "data/hitter_passer_given_rotation_expected_sideout.csv",
+  passerSetterGivenRotation: "data/passer_setter_given_rotation_expected_sideout.csv",
 
-// ── Derived player lists ──
-const PASSERS = [...new Set(PASSER_SETTER.map(x => x.passer))].sort();
-const SETTERS = ['Maija Nepszy', 'Mika Rome'];
-
-// Per-player overall stats for the card subtitle
-const passerStats = {};
-PASSER_SETTER.forEach(x => {
-  if (!passerStats[x.passer]) passerStats[x.passer] = {n:0, sideouts:0};
-  passerStats[x.passer].n += x.n;
-  passerStats[x.passer].sideouts += x.sideouts;
-});
-
-const setterStats = {
-  'Maija Nepszy': {n:569, sideouts:334, xso:58.7},
-  'Mika Rome':    {n:582, sideouts:332, xso:57.0},
+  rotationSetterHitter: "data/rotation_setter_hitter_xso.csv",
+  rotationPasserSetterHitter: "data/rotation_passer_setter_hitter_xso.csv"
 };
 
-// ── State ──
-let selPasser = null, selSetter = null, selHitter = null;
+const TRUE_SETTERS = ["Maija Nepszy", "Mika Rome"];
 
-// ── Helpers ──
-function initials(name) { return name.split(' ').map(w=>w[0]).slice(0,2).join(''); }
+let DATA = {};
+let TEAM_AVG = 0;
+
+let selRotation = null;
+let selPasser = null;
+let selSetter = null;
+let selHitter = null;
+
+/* -------------------------------------------------------
+   LOAD CSV
+------------------------------------------------------- */
+
+async function loadCSV(path) {
+  const res = await fetch(path);
+
+  if (!res.ok) {
+    throw new Error("Could not load " + path);
+  }
+
+  const text = await res.text();
+
+  return Papa.parse(text, {
+    header: true,
+    dynamicTyping: true,
+    skipEmptyLines: true
+  }).data;
+}
+
+async function init() {
+  try {
+    DATA.passerSetter = await loadCSV(FILES.passerSetter);
+    DATA.setter = await loadCSV(FILES.setter);
+    DATA.setterHitter = await loadCSV(FILES.setterHitter);
+    DATA.passerSetterHitter = await loadCSV(FILES.passerSetterHitter);
+
+    DATA.hitterGivenRotation = await loadCSV(FILES.hitterGivenRotation);
+    DATA.setterGivenRotation = await loadCSV(FILES.setterGivenRotation);
+    DATA.setterHitterGivenRotation = await loadCSV(FILES.setterHitterGivenRotation);
+    DATA.hitterPasserGivenRotation = await loadCSV(FILES.hitterPasserGivenRotation);
+    DATA.passerSetterGivenRotation = await loadCSV(FILES.passerSetterGivenRotation);
+
+    DATA.rotationSetterHitter = await loadCSV(FILES.rotationSetterHitter);
+    DATA.rotationPasserSetterHitter = await loadCSV(FILES.rotationPasserSetterHitter);
+
+    TEAM_AVG = getOverallAverage();
+    document.getElementById("teamAvg").textContent = TEAM_AVG.toFixed(1) + "%";
+
+    buildRotations();
+    buildPassers();
+    buildSetters();
+    buildHitters();
+
+    refreshAll();
+  } catch (err) {
+    console.error(err);
+    document.getElementById("scoreMeta").innerHTML =
+      "CSV load error. Check that your files are inside the <strong>data/</strong> folder.";
+  }
+}
+
+/* -------------------------------------------------------
+   HELPERS
+------------------------------------------------------- */
+
+function initials(name) {
+  return String(name)
+    .split(" ")
+    .map(w => w[0])
+    .slice(0, 2)
+    .join("");
+}
+
+function cleanName(x) {
+  return String(x ?? "").trim();
+}
+
+function toNumber(x) {
+  const n = Number(x);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function getXSO(row) {
+  if (!row) return 0;
+  if (row.xso !== undefined) return toNumber(row.xso);
+  if (row.expected_sideout_pct !== undefined) return toNumber(row.expected_sideout_pct);
+  return 0;
+}
+
+function getN(row) {
+  if (!row) return 0;
+  if (row.n !== undefined) return toNumber(row.n);
+  if (row.receptions !== undefined) return toNumber(row.receptions);
+  return 0;
+}
+
+function getSideouts(row) {
+  if (!row) return 0;
+  return toNumber(row.sideouts);
+}
+
+function uniqueValues(rows, col) {
+  return [...new Set(
+    rows
+      .map(r => cleanName(r[col]))
+      .filter(Boolean)
+  )].sort();
+}
 
 function rateColor(v) {
-  if (v >= 70) return 'rate-hot';
-  if (v >= 58) return 'rate-warm';
-  if (v >= 50) return 'rate-mid';
-  return 'rate-cool';
+  if (v >= 70) return "rate-hot";
+  if (v >= 58) return "rate-warm";
+  if (v >= 50) return "rate-mid";
+  return "rate-cool";
 }
 
 function rateHex(v) {
-  if (v >= 70) return '#22c55e';
-  if (v >= 58) return '#4ade80';
-  if (v >= 50) return '#fbbf24';
-  return '#f87171';
+  if (v >= 70) return "#22c55e";
+  if (v >= 58) return "#4ade80";
+  if (v >= 50) return "#fbbf24";
+  return "#f87171";
 }
 
-// ── Build columns ──
+function aggregate(rows) {
+  let n = 0;
+  let sideouts = 0;
+
+  rows.forEach(row => {
+    n += getN(row);
+    sideouts += getSideouts(row);
+  });
+
+  if (n === 0) return null;
+
+  return {
+    n,
+    sideouts,
+    xso: sideouts / n * 100
+  };
+}
+
+function getOverallAverage() {
+  const agg = aggregate(DATA.setter);
+  return agg ? agg.xso : 0;
+}
+
+/* -------------------------------------------------------
+   BUILD COLUMNS
+------------------------------------------------------- */
+
+function buildRotations() {
+  const list = document.getElementById("rotationList");
+  list.innerHTML = "";
+
+  const rotations = [...new Set([
+    ...uniqueValues(DATA.setterGivenRotation, "rotation"),
+    ...uniqueValues(DATA.hitterGivenRotation, "rotation"),
+    ...uniqueValues(DATA.rotationPasserSetterHitter, "rotation")
+  ])].sort((a, b) => Number(a) - Number(b));
+
+  rotations.forEach(rot => {
+    const rows = DATA.setterGivenRotation.filter(x =>
+      String(x.rotation) === String(rot)
+    );
+
+    const st = aggregate(rows);
+    const xso = st ? st.xso : 0;
+    const n = st ? st.n : 0;
+
+    const card = makeCard("Rotation " + rot, "rotation", xso, n + " receptions");
+    card.setAttribute("data-rotation", rot);
+    card.addEventListener("click", () => selectRotation(rot));
+    list.appendChild(card);
+  });
+}
+
 function buildPassers() {
-  const list = document.getElementById('passerList');
-  PASSERS.forEach(name => {
-    const st = passerStats[name] || {n:0, sideouts:0};
-    const xso = st.n > 0 ? (st.sideouts / st.n * 100) : 0;
-    const card = makeCard(name, 'passer', xso, st.n + ' receptions');
-    card.addEventListener('click', () => selectPasser(name));
+  const list = document.getElementById("passerList");
+  list.innerHTML = "";
+
+  const passers = uniqueValues(DATA.passerSetter, "passer");
+
+  passers.forEach(name => {
+    const rows = DATA.passerSetter.filter(x => x.passer === name);
+    const st = aggregate(rows);
+    if (!st) return;
+
+    const card = makeCard(name, "passer", st.xso, st.n + " receptions");
+    card.addEventListener("click", () => selectPasser(name));
     list.appendChild(card);
   });
 }
 
 function buildSetters() {
-  const list = document.getElementById('setterList');
-  SETTERS.forEach(name => {
-    const st = setterStats[name];
-    const card = makeCard(name, 'setter', st.xso, st.n + ' receptions');
-    card.addEventListener('click', () => selectSetter(name));
+  const list = document.getElementById("setterList");
+  list.innerHTML = "";
+
+  TRUE_SETTERS.forEach(name => {
+    const row = DATA.setter.find(x => x.setter_group === name);
+    if (!row) return;
+
+    const xso = getXSO(row);
+    const n = getN(row);
+
+    const card = makeCard(name, "setter", xso, n + " receptions");
+    card.addEventListener("click", () => selectSetter(name));
     list.appendChild(card);
   });
 }
 
-function buildHitters(passer, setter) {
-  const list = document.getElementById('hitterList');
-  const note = document.getElementById('hitterNote');
-  list.innerHTML = '';
+function buildHitters() {
+  const list = document.getElementById("hitterList");
+  const note = document.getElementById("hitterNote");
 
-  const combos = PSH.filter(x => x.passer === passer && x.setter === setter)
-    .sort((a,b) => b.xso - a.xso);
+  list.innerHTML = "";
 
-  if (!combos.length) {
-    note.classList.add('visible');
+  if (!selPasser || !selSetter) {
+    note.classList.add("visible");
+    note.innerHTML =
+      "Select a passer &amp; setter first to see<br>available hitter combinations";
     return;
   }
 
-  note.classList.remove('visible');
+  let combos = [];
+
+  if (selRotation) {
+    combos = DATA.rotationPasserSetterHitter
+      .filter(row =>
+        String(row.rotation) === String(selRotation) &&
+        row.passer === selPasser &&
+        row.setter_group === selSetter
+      )
+      .sort((a, b) => getXSO(b) - getXSO(a));
+  } else {
+    combos = DATA.passerSetterHitter
+      .filter(row =>
+        row.passer === selPasser &&
+        row.setter_group === selSetter
+      )
+      .sort((a, b) => getXSO(b) - getXSO(a));
+  }
+
+  if (!combos.length) {
+    note.classList.add("visible");
+    note.innerHTML =
+      "No hitter combinations found for this<br>passer, setter, and rotation.";
+    return;
+  }
+
+  note.classList.remove("visible");
 
   combos.forEach(row => {
-    const card = makeCard(row.hitter, 'hitter', row.xso, row.n + ' recs · ' + row.sideouts + ' sideouts');
-    card.setAttribute('data-hitter', row.hitter);
-    card.addEventListener('click', () => selectHitter(row.hitter));
+    const hitter = row.hitter;
+    const xso = getXSO(row);
+    const n = getN(row);
+    const sideouts = getSideouts(row);
+
+    const card = makeCard(
+      hitter,
+      "hitter",
+      xso,
+      n + " recs · " + sideouts + " sideouts"
+    );
+
+    card.addEventListener("click", () => selectHitter(hitter));
     list.appendChild(card);
   });
 }
 
 function makeCard(name, role, xso, sub) {
-  const div = document.createElement('div');
-  div.className = 'pcard';
-  div.setAttribute('data-name', name);
+  const div = document.createElement("div");
+  div.className = "pcard";
+  div.setAttribute("data-name", name);
+
   div.innerHTML = `
-    <div class="avatar ${role}">${initials(name)}</div>
+    <div class="avatar ${role}">${role === "rotation" ? "R" : initials(name)}</div>
     <div class="pcard-info">
       <div class="pcard-name">${name}</div>
       <div class="pcard-stat">${sub}</div>
@@ -602,10 +772,20 @@ function makeCard(name, role, xso, sub) {
     <div class="pcard-rate ${rateColor(xso)}">${xso.toFixed(1)}%</div>
     <div class="check-icon">✓</div>
   `;
+
   return div;
 }
 
-// ── Selection logic ──
+/* -------------------------------------------------------
+   SELECTION LOGIC
+------------------------------------------------------- */
+
+function selectRotation(rot) {
+  selRotation = String(selRotation) === String(rot) ? null : rot;
+  selHitter = null;
+  refreshAll();
+}
+
 function selectPasser(name) {
   selPasser = selPasser === name ? null : name;
   selHitter = null;
@@ -620,144 +800,275 @@ function selectSetter(name) {
 
 function selectHitter(name) {
   selHitter = selHitter === name ? null : name;
-  refreshScore();
-  highlightHitters();
+  refreshAll();
 }
 
 function clearAll() {
-  selPasser = selSetter = selHitter = null;
+  selRotation = null;
+  selPasser = null;
+  selSetter = null;
+  selHitter = null;
   refreshAll();
 }
 
 function refreshAll() {
+  highlightRotations();
   highlightPassers();
   highlightSetters();
 
-  if (selPasser && selSetter) {
-    buildHitters(selPasser, selSetter);
-    highlightHitters();
-  } else {
-    document.getElementById('hitterList').innerHTML = '';
-    document.getElementById('hitterNote').classList.add('visible');
-  }
+  buildHitters();
+  highlightHitters();
 
   refreshScore();
 }
 
+/* -------------------------------------------------------
+   HIGHLIGHTING
+------------------------------------------------------- */
+
+function highlightRotations() {
+  document.querySelectorAll("#rotationList .pcard").forEach(card => {
+    const rot = card.getAttribute("data-rotation");
+    card.classList.toggle("selected", String(rot) === String(selRotation));
+    card.classList.toggle("rotation-sel", String(rot) === String(selRotation));
+  });
+}
+
 function highlightPassers() {
-  document.querySelectorAll('#passerList .pcard').forEach(card => {
-    const name = card.getAttribute('data-name');
-    card.classList.toggle('selected', name === selPasser);
-    card.classList.toggle('passer-sel', name === selPasser);
+  document.querySelectorAll("#passerList .pcard").forEach(card => {
+    const name = card.getAttribute("data-name");
+    card.classList.toggle("selected", name === selPasser);
+    card.classList.toggle("passer-sel", name === selPasser);
   });
 }
 
 function highlightSetters() {
-  document.querySelectorAll('#setterList .pcard').forEach(card => {
-    const name = card.getAttribute('data-name');
-    card.classList.toggle('selected', name === selSetter);
-    card.classList.toggle('setter-sel', name === selSetter);
+  document.querySelectorAll("#setterList .pcard").forEach(card => {
+    const name = card.getAttribute("data-name");
+    card.classList.toggle("selected", name === selSetter);
+    card.classList.toggle("setter-sel", name === selSetter);
   });
 }
 
 function highlightHitters() {
-  document.querySelectorAll('#hitterList .pcard').forEach(card => {
-    const name = card.getAttribute('data-name');
-    card.classList.toggle('selected', name === selHitter);
-    card.classList.toggle('hitter-sel', name === selHitter);
+  document.querySelectorAll("#hitterList .pcard").forEach(card => {
+    const name = card.getAttribute("data-name");
+    card.classList.toggle("selected", name === selHitter);
+    card.classList.toggle("hitter-sel", name === selHitter);
   });
 }
 
-function refreshScore() {
-  const pctEl   = document.getElementById('scorePct');
-  const metaEl  = document.getElementById('scoreMeta');
-  const vsEl    = document.getElementById('vsAvg');
-  const bar     = document.getElementById('scoreBar');
-  const ctxP    = document.getElementById('ctxPasser');
-  const ctxS    = document.getElementById('ctxSetter');
-  const ctxH    = document.getElementById('ctxHitter');
-  const ctxR    = document.getElementById('ctxRec');
+/* -------------------------------------------------------
+   LOOKUP LOGIC
+------------------------------------------------------- */
 
-  ctxP.textContent = selPasser ? 'Pass: ' + selPasser.split(' ')[0] : 'Passer: —';
-  ctxS.textContent = selSetter ? 'Set: '  + selSetter.split(' ')[0] : 'Setter: —';
-  ctxH.textContent = selHitter ? 'Hit: '  + selHitter.split(' ')[0] : 'Hitter: —';
-  ctxP.classList.toggle('selected', !!selPasser);
-  ctxS.classList.toggle('selected', !!selSetter);
-  ctxH.classList.toggle('selected', !!selHitter);
+function findResult() {
+  const hasR = !!selRotation;
+  const hasP = !!selPasser;
+  const hasS = !!selSetter;
+  const hasH = !!selHitter;
 
-  if (!selPasser && !selSetter) {
-    pctEl.textContent = '—';
-    pctEl.style.color = 'var(--dim)';
-    metaEl.innerHTML = 'Select a passer &amp; setter to begin';
-    vsEl.textContent = '';
-    ctxR.textContent = 'Receptions: —';
-    ctxR.classList.remove('selected');
-    bar.classList.remove('has-result');
-    return;
-  }
-
-  // Trio lookup first
   let row = null;
-  if (selPasser && selSetter && selHitter) {
-    row = PSH.find(x => x.passer===selPasser && x.setter===selSetter && x.hitter===selHitter);
-  }
-  // Fall back to passer+setter
-  if (!row && selPasser && selSetter) {
-    row = PASSER_SETTER.find(x => x.passer===selPasser && x.setter===selSetter);
-  }
-  // Just one selected
-  if (!row && selPasser && !selSetter) {
-    const st = passerStats[selPasser];
-    if (st) {
-      const xso = (st.sideouts / st.n * 100);
-      pctEl.textContent = xso.toFixed(1) + '%';
-      pctEl.style.color = rateHex(xso);
-      metaEl.innerHTML = `<strong>${selPasser}</strong> · overall passing average`;
-      const diff = xso - TEAM_AVG;
-      vsEl.textContent = (diff>=0?'+':'')+diff.toFixed(1)+'pp vs team avg';
-      vsEl.className = 'vs-avg ' + (diff>=0?'above':'below');
-      ctxR.textContent = st.n + ' receptions';
-      ctxR.classList.add('selected');
-      bar.classList.add('has-result');
-    }
-    return;
+  let source = "";
+
+  if (hasR && hasP && hasS && hasH) {
+    row = DATA.rotationPasserSetterHitter.find(x =>
+      String(x.rotation) === String(selRotation) &&
+      x.passer === selPasser &&
+      x.setter_group === selSetter &&
+      x.hitter === selHitter
+    );
+    source = "rotation_passer_setter_hitter_xso.csv";
   }
 
-  if (!row) {
-    pctEl.textContent = '?';
-    pctEl.style.color = 'var(--muted)';
-    metaEl.innerHTML = 'No data for this combination';
-    vsEl.textContent = '';
-    ctxR.textContent = 'Receptions: —';
-    ctxR.classList.remove('selected');
-    return;
+  else if (hasP && hasS && hasH) {
+    row = DATA.passerSetterHitter.find(x =>
+      x.passer === selPasser &&
+      x.setter_group === selSetter &&
+      x.hitter === selHitter
+    );
+    source = "passer_setter_hitter_xso_all_combinations.csv";
   }
 
-  const xso = row.xso;
-  const diff = xso - TEAM_AVG;
+  else if (hasR && hasS && hasH) {
+    row = DATA.rotationSetterHitter.find(x =>
+      String(x.rotation) === String(selRotation) &&
+      x.setter_group === selSetter &&
+      x.hitter === selHitter
+    );
+    source = "rotation_setter_hitter_xso.csv";
+  }
 
-  pctEl.textContent = xso.toFixed(1) + '%';
-  pctEl.style.color = rateHex(xso);
-  pctEl.classList.add('lit');
-  setTimeout(() => pctEl.classList.remove('lit'), 200);
+  else if (hasS && hasH) {
+    row = DATA.setterHitter.find(x =>
+      x.setter_group === selSetter &&
+      x.hitter === selHitter
+    );
+    source = "setter_hitter_xso.csv";
+  }
 
-  const who = selHitter
-    ? `<strong>${selPasser.split(' ')[0]}</strong> → <strong>${selSetter.split(' ')[0]}</strong> → <strong>${selHitter.split(' ')[0]}</strong>`
-    : `<strong>${selPasser.split(' ')[0]}</strong> passing to <strong>${selSetter.split(' ')[0]}</strong>`;
-  metaEl.innerHTML = who + ` · ${row.sideouts}/${row.n} sideouts`;
+  else if (hasR && hasP && hasS) {
+    row = DATA.passerSetterGivenRotation.find(x =>
+      String(x.rotation) === String(selRotation) &&
+      x.passer === selPasser &&
+      x.setter_group === selSetter
+    );
+    source = "passer_setter_given_rotation_expected_sideout.csv";
+  }
 
-  vsEl.textContent = (diff>=0?'+':'')+diff.toFixed(1)+'pp vs team avg';
-  vsEl.className   = 'vs-avg ' + (diff>=0?'above':'below');
+  else if (hasP && hasS) {
+    row = DATA.passerSetter.find(x =>
+      x.passer === selPasser &&
+      x.setter_group === selSetter
+    );
+    source = "passer_setter_xso.csv";
+  }
 
-  ctxR.textContent = row.n + ' receptions';
-  ctxR.classList.add('selected');
-  bar.classList.add('has-result');
+  else if (hasR && hasP && hasH) {
+    row = DATA.hitterPasserGivenRotation.find(x =>
+      String(x.rotation) === String(selRotation) &&
+      x.passer === selPasser &&
+      x.hitter === selHitter
+    );
+    source = "hitter_passer_given_rotation_expected_sideout.csv";
+  }
+
+  else if (hasR && hasS) {
+    row = DATA.setterGivenRotation.find(x =>
+      String(x.rotation) === String(selRotation) &&
+      x.setter_group === selSetter
+    );
+    source = "setter_given_rotation_expected_sideout.csv";
+  }
+
+  else if (hasR && hasH) {
+    row = DATA.hitterGivenRotation.find(x =>
+      String(x.rotation) === String(selRotation) &&
+      x.hitter === selHitter
+    );
+    source = "hitter_given_rotation_expected_sideout.csv";
+  }
+
+  else if (hasS) {
+    row = DATA.setter.find(x =>
+      x.setter_group === selSetter
+    );
+    source = "setter_xso.csv";
+  }
+
+  else if (hasH) {
+    row = aggregate(DATA.setterHitter.filter(x =>
+      x.hitter === selHitter
+    ));
+    source = "setter_hitter_xso.csv";
+  }
+
+  else if (hasP) {
+    row = aggregate(DATA.passerSetter.filter(x =>
+      x.passer === selPasser
+    ));
+    source = "passer_setter_xso.csv";
+  }
+
+  else if (hasR) {
+    row = aggregate(DATA.setterGivenRotation.filter(x =>
+      String(x.rotation) === String(selRotation)
+    ));
+    source = "setter_given_rotation_expected_sideout.csv";
+  }
+
+  else {
+    row = aggregate(DATA.setter);
+    source = "setter_xso.csv";
+  }
+
+  return { row, source };
 }
 
-// ── Init ──
-buildPassers();
-buildSetters();
-document.getElementById('hitterNote').classList.add('visible');
+/* -------------------------------------------------------
+   SCORE DISPLAY
+------------------------------------------------------- */
+
+function refreshScore() {
+  const pctEl   = document.getElementById("scorePct");
+  const metaEl  = document.getElementById("scoreMeta");
+  const vsEl    = document.getElementById("vsAvg");
+  const bar     = document.getElementById("scoreBar");
+
+  const ctxRot  = document.getElementById("ctxRotation");
+  const ctxP    = document.getElementById("ctxPasser");
+  const ctxS    = document.getElementById("ctxSetter");
+  const ctxH    = document.getElementById("ctxHitter");
+  const ctxR    = document.getElementById("ctxRec");
+
+  ctxRot.textContent = selRotation ? "Rotation: " + selRotation : "Rotation: —";
+  ctxP.textContent   = selPasser ? "Pass: " + selPasser.split(" ")[0] : "Passer: —";
+  ctxS.textContent   = selSetter ? "Set: "  + selSetter.split(" ")[0] : "Setter: —";
+  ctxH.textContent   = selHitter ? "Hit: "  + selHitter.split(" ")[0] : "Hitter: —";
+
+  ctxRot.classList.toggle("selected", !!selRotation);
+  ctxP.classList.toggle("selected", !!selPasser);
+  ctxS.classList.toggle("selected", !!selSetter);
+  ctxH.classList.toggle("selected", !!selHitter);
+
+  const result = findResult();
+  const row = result.row;
+
+  if (!row) {
+    pctEl.textContent = "No Data";
+    pctEl.style.fontSize = "2.3rem";
+    pctEl.style.color = "var(--muted)";
+
+    metaEl.innerHTML = "No Data on Grouping";
+    vsEl.textContent = "";
+
+    ctxR.textContent = "Receptions: —";
+    ctxR.classList.remove("selected");
+
+    bar.classList.add("has-result");
+    return;
+  }
+
+  const xso = getXSO(row);
+  const n = getN(row);
+  const sideouts = getSideouts(row);
+  const diff = xso - TEAM_AVG;
+
+  pctEl.style.fontSize = "";
+  pctEl.textContent = xso.toFixed(1) + "%";
+  pctEl.style.color = rateHex(xso);
+  pctEl.classList.add("lit");
+  setTimeout(() => pctEl.classList.remove("lit"), 200);
+
+  metaEl.innerHTML = buildMetaText(sideouts, n, result.source);
+
+  vsEl.textContent = (diff >= 0 ? "+" : "") + diff.toFixed(1) + "pp vs team avg";
+  vsEl.className = "vs-avg " + (diff >= 0 ? "above" : "below");
+
+  ctxR.textContent = n + " receptions";
+  ctxR.classList.add("selected");
+  bar.classList.add("has-result");
+}
+
+function buildMetaText(sideouts, n, source) {
+  const parts = [];
+
+  if (selRotation) parts.push(`<strong>R${selRotation}</strong>`);
+  if (selPasser) parts.push(`<strong>${selPasser.split(" ")[0]}</strong>`);
+  if (selSetter) parts.push(`<strong>${selSetter.split(" ")[0]}</strong>`);
+  if (selHitter) parts.push(`<strong>${selHitter.split(" ")[0]}</strong>`);
+
+  const combo = parts.length ? parts.join(" → ") : "Overall true-setter average";
+
+  return `${combo} · ${sideouts}/${n} sideouts · ${source}`;
+}
+
+/* -------------------------------------------------------
+   INIT
+------------------------------------------------------- */
+
+init();
 </script>
+
 </body>
 </html>
