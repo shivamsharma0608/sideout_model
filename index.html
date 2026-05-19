@@ -38,7 +38,7 @@ body {
   overflow-x: hidden;
 }
 
-/* ── HEADER ── */
+/* HEADER */
 header {
   background: var(--navy);
   border-bottom: 1px solid var(--border);
@@ -74,7 +74,7 @@ header {
 
 .avg-chip strong { color: var(--gold); }
 
-/* ── SCORE DISPLAY ── */
+/* SCORE DISPLAY */
 .score-bar {
   position: sticky;
   top: 0;
@@ -156,7 +156,7 @@ header {
 .vs-avg.above { color: var(--green); }
 .vs-avg.below { color: var(--red); }
 
-/* ── CLEAR BTN ── */
+/* GLOBAL RESET */
 .clear-btn {
   position: absolute;
   right: 2rem;
@@ -176,7 +176,7 @@ header {
   color: var(--red);
 }
 
-/* ── COLUMNS LAYOUT ── */
+/* LAYOUT */
 .columns {
   display: grid;
   grid-template-columns: 0.75fr 1fr 1fr 1fr;
@@ -200,21 +200,42 @@ header {
   border-bottom: 1px solid var(--border);
 }
 
-.col-icon {
+/* COLUMN CLEAR X BUTTONS */
+.col-clear {
   width: 32px;
   height: 32px;
   border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surf2);
+  color: var(--muted);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: .85rem;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
   flex-shrink: 0;
+  transition: all .15s;
+  font-family: 'DM Sans', sans-serif;
 }
 
-.col-icon.rotation { background: rgba(167,139,250,.13); }
-.col-icon.passer   { background: rgba(0,98,155,.18); }
-.col-icon.setter   { background: rgba(198,146,20,.15); }
-.col-icon.hitter   { background: rgba(34,197,94,.12); }
+.col-clear:hover {
+  color: var(--red);
+  border-color: var(--red);
+  background: rgba(248,113,113,.08);
+}
+
+.col-clear.rotation { color: var(--purple); }
+.col-clear.passer   { color: #5ab4f5; }
+.col-clear.setter   { color: var(--gold); }
+.col-clear.hitter   { color: var(--green); }
+
+.col-clear.rotation:hover,
+.col-clear.passer:hover,
+.col-clear.setter:hover,
+.col-clear.hitter:hover {
+  color: var(--red);
+}
 
 .col-title {
   font-family: 'Bebas Neue', sans-serif;
@@ -235,7 +256,7 @@ header {
   line-height: 1.4;
 }
 
-/* ── PLAYER CARDS ── */
+/* CARDS */
 .player-list {
   display: flex;
   flex-direction: column;
@@ -359,7 +380,7 @@ header {
 .pcard.selected.setter-sel .check-icon   { background: var(--gold); color: var(--navy); }
 .pcard.selected.hitter-sel .check-icon   { background: var(--green); color: var(--navy); }
 
-/* ── HITTER NOTE ── */
+/* HITTER NOTE */
 .hitter-note {
   font-size: .72rem;
   color: var(--muted);
@@ -373,7 +394,7 @@ header {
 
 .hitter-note.visible { display: block; }
 
-/* ── RATE COLOR CLASSES ── */
+/* RATE COLORS */
 .rate-hot  { color: var(--green); }
 .rate-warm { color: #4ade80; }
 .rate-mid  { color: var(--amber); }
@@ -399,7 +420,6 @@ header {
   <div class="avg-chip">Team avg: <strong id="teamAvg">—</strong></div>
 </header>
 
-<!-- LIVE SCORE BAR -->
 <div class="score-bar" id="scoreBar">
   <div class="score-context" id="ctxLeft">
     <div class="ctx-chip" id="ctxRotation">Rotation: —</div>
@@ -422,52 +442,39 @@ header {
   <button class="clear-btn" onclick="clearAll()">✕ Reset</button>
 </div>
 
-<!-- FOUR COLUMNS -->
 <div class="columns">
 
-  <!-- ROTATION -->
   <div class="col">
     <div class="col-header">
-      <div class="col-icon rotation">↻</div>
-      <div>
-        <div class="col-title rotation">Rotation</div>
-      </div>
+      <button class="col-clear rotation" onclick="clearRotation()" title="Clear rotation">×</button>
+      <div><div class="col-title rotation">Rotation</div></div>
       <div class="col-sub">Optional</div>
     </div>
     <div class="player-list" id="rotationList"></div>
   </div>
 
-  <!-- PASSER -->
   <div class="col">
     <div class="col-header">
-      <div class="col-icon passer">🫳</div>
-      <div>
-        <div class="col-title passer">Passer</div>
-      </div>
-      <div class="col-sub">All players</div>
+      <button class="col-clear passer" onclick="clearPasser()" title="Clear passer">×</button>
+      <div><div class="col-title passer">Passer</div></div>
+      <div class="col-sub">Rotation-aware</div>
     </div>
     <div class="player-list" id="passerList"></div>
   </div>
 
-  <!-- SETTER -->
   <div class="col">
     <div class="col-header">
-      <div class="col-icon setter">🎯</div>
-      <div>
-        <div class="col-title setter">Setter</div>
-      </div>
+      <button class="col-clear setter" onclick="clearSetter()" title="Clear setter">×</button>
+      <div><div class="col-title setter">Setter</div></div>
       <div class="col-sub">Optional</div>
     </div>
     <div class="player-list" id="setterList"></div>
   </div>
 
-  <!-- HITTER -->
   <div class="col">
     <div class="col-header">
-      <div class="col-icon hitter">⚡</div>
-      <div>
-        <div class="col-title hitter">Hitter</div>
-      </div>
+      <button class="col-clear hitter" onclick="clearHitter()" title="Clear hitter">×</button>
+      <div><div class="col-title hitter">Hitter</div></div>
       <div class="col-sub">Requires passer + setter</div>
     </div>
 
@@ -481,12 +488,9 @@ header {
 </div>
 
 <script>
-/* -------------------------------------------------------
-   CSV FILE PATHS
-------------------------------------------------------- */
-
 const FILES = {
   passerSetter: "data/passer_setter_xso.csv",
+  passerGivenRotation: "data/passer_given_rotation_expected_sideout.csv",
   setter: "data/setter_xso.csv",
   setterHitter: "data/setter_hitter_xso.csv",
   passerSetterHitter: "data/passer_setter_hitter_xso_all_combinations.csv",
@@ -554,10 +558,6 @@ let selPasser = null;
 let selSetter = null;
 let selHitter = null;
 
-/* -------------------------------------------------------
-   LOAD CSV
-------------------------------------------------------- */
-
 async function loadCSV(path) {
   const res = await fetch(path);
 
@@ -577,6 +577,7 @@ async function loadCSV(path) {
 async function init() {
   try {
     DATA.passerSetter = await loadCSV(FILES.passerSetter);
+    DATA.passerGivenRotation = await loadCSV(FILES.passerGivenRotation);
     DATA.setter = await loadCSV(FILES.setter);
     DATA.setterHitter = await loadCSV(FILES.setterHitter);
     DATA.passerSetterHitter = await loadCSV(FILES.passerSetterHitter);
@@ -602,13 +603,9 @@ async function init() {
   } catch (err) {
     console.error(err);
     document.getElementById("scoreMeta").innerHTML =
-      "CSV load error. Check that your files are inside the <strong>data/</strong> folder.";
+      "CSV load error. Check that your files are inside the <strong>data/</strong> folder, especially <strong>passer_given_rotation_expected_sideout.csv</strong>.";
   }
 }
-
-/* -------------------------------------------------------
-   HELPERS
-------------------------------------------------------- */
 
 function initials(name) {
   return String(name)
@@ -624,6 +621,11 @@ function cleanName(x) {
 
 function normalizePlayerName(name) {
   if (name === "Jasmin Saran") return "Jasmine Saran";
+  return name;
+}
+
+function displayPlayerName(name) {
+  if (name === "Jasmine Saran") return "Jasmin Saran";
   return name;
 }
 
@@ -702,10 +704,6 @@ function getOverallAverage() {
   return agg ? agg.xso : 0;
 }
 
-/* -------------------------------------------------------
-   BUILD COLUMNS
-------------------------------------------------------- */
-
 function buildRotations() {
   const list = document.getElementById("rotationList");
   list.innerHTML = "";
@@ -713,7 +711,8 @@ function buildRotations() {
   const rotations = [...new Set([
     ...uniqueValues(DATA.setterGivenRotation, "rotation"),
     ...uniqueValues(DATA.hitterGivenRotation, "rotation"),
-    ...uniqueValues(DATA.rotationPasserSetterHitter, "rotation")
+    ...uniqueValues(DATA.rotationPasserSetterHitter, "rotation"),
+    ...uniqueValues(DATA.passerGivenRotation, "rotation")
   ])].sort((a, b) => Number(a) - Number(b));
 
   rotations.forEach(rot => {
@@ -739,18 +738,35 @@ function buildPassers() {
   ALL_UCSD_PLAYERS.forEach(name => {
     const dataName = normalizePlayerName(name);
 
-    const rows = DATA.passerSetter.filter(x =>
-      x.passer === dataName
-    );
+    let rows;
+
+    if (selRotation) {
+      rows = DATA.passerGivenRotation.filter(x =>
+        String(x.rotation) === String(selRotation) &&
+        x.passer === dataName
+      );
+    } else {
+      rows = DATA.passerSetter.filter(x =>
+        x.passer === dataName
+      );
+    }
 
     const st = aggregate(rows);
+
+    if (selRotation && !st) {
+      return;
+    }
 
     let card;
 
     if (!st) {
       card = makeCard(name, "passer", null, "No passing data");
     } else {
-      card = makeCard(name, "passer", st.xso, st.n + " receptions");
+      const note = selRotation
+        ? st.n + " receptions in R" + selRotation
+        : st.n + " receptions";
+
+      card = makeCard(name, "passer", st.xso, note);
     }
 
     card.addEventListener("click", () => selectPasser(name));
@@ -825,21 +841,19 @@ function buildHitters() {
   note.classList.remove("visible");
 
   combos.forEach(row => {
-    const hitter = row.hitter;
+    const hitter = displayPlayerName(row.hitter);
     const xso = getXSO(row);
     const n = getN(row);
     const sideouts = getSideouts(row);
 
-    const displayHitter = hitter === "Jasmine Saran" ? "Jasmin Saran" : hitter;
-
     const card = makeCard(
-      displayHitter,
+      hitter,
       "hitter",
       xso,
       n + " recs · " + sideouts + " sideouts"
     );
 
-    card.addEventListener("click", () => selectHitter(displayHitter));
+    card.addEventListener("click", () => selectHitter(hitter));
     list.appendChild(card);
   });
 }
@@ -888,13 +902,26 @@ function makeCard(name, role, xso, sub) {
   return div;
 }
 
-/* -------------------------------------------------------
-   SELECTION LOGIC
-------------------------------------------------------- */
-
 function selectRotation(rot) {
   selRotation = String(selRotation) === String(rot) ? null : rot;
   selHitter = null;
+
+  if (selRotation && selPasser) {
+    const dataPasser = normalizePlayerName(selPasser);
+
+    const rows = DATA.passerGivenRotation.filter(x =>
+      String(x.rotation) === String(selRotation) &&
+      x.passer === dataPasser
+    );
+
+    const st = aggregate(rows);
+
+    if (!st) {
+      selPasser = null;
+      selHitter = null;
+    }
+  }
+
   refreshAll();
 }
 
@@ -915,6 +942,29 @@ function selectHitter(name) {
   refreshAll();
 }
 
+function clearRotation() {
+  selRotation = null;
+  selHitter = null;
+  refreshAll();
+}
+
+function clearPasser() {
+  selPasser = null;
+  selHitter = null;
+  refreshAll();
+}
+
+function clearSetter() {
+  selSetter = null;
+  selHitter = null;
+  refreshAll();
+}
+
+function clearHitter() {
+  selHitter = null;
+  refreshAll();
+}
+
 function clearAll() {
   selRotation = null;
   selPasser = null;
@@ -924,6 +974,8 @@ function clearAll() {
 }
 
 function refreshAll() {
+  buildPassers();
+
   highlightRotations();
   highlightPassers();
   highlightSetters();
@@ -933,10 +985,6 @@ function refreshAll() {
 
   refreshScore();
 }
-
-/* -------------------------------------------------------
-   HIGHLIGHTING
-------------------------------------------------------- */
 
 function highlightRotations() {
   document.querySelectorAll("#rotationList .pcard").forEach(card => {
@@ -969,10 +1017,6 @@ function highlightHitters() {
     card.classList.toggle("hitter-sel", name === selHitter);
   });
 }
-
-/* -------------------------------------------------------
-   LOOKUP LOGIC
-------------------------------------------------------- */
 
 function findResult() {
   const hasR = !!selRotation;
@@ -1078,6 +1122,14 @@ function findResult() {
     source = "setter_hitter_xso.csv";
   }
 
+  else if (hasP && hasR) {
+    row = aggregate(DATA.passerGivenRotation.filter(x =>
+      String(x.rotation) === String(selRotation) &&
+      x.passer === dataPasser
+    ));
+    source = "passer_given_rotation_expected_sideout.csv";
+  }
+
   else if (hasP) {
     row = aggregate(DATA.passerSetter.filter(x =>
       x.passer === dataPasser
@@ -1099,10 +1151,6 @@ function findResult() {
 
   return { row, source };
 }
-
-/* -------------------------------------------------------
-   SCORE DISPLAY
-------------------------------------------------------- */
 
 function refreshScore() {
   const pctEl   = document.getElementById("scorePct");
@@ -1177,10 +1225,6 @@ function buildMetaText(sideouts, n, source) {
 
   return `${combo} · ${sideouts}/${n} sideouts · ${source}`;
 }
-
-/* -------------------------------------------------------
-   INIT
-------------------------------------------------------- */
 
 init();
 </script>
