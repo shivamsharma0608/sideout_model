@@ -131,17 +131,120 @@ header {
   gap: .5rem;
 }
 
+/* TOP CONTEXT CHIPS WITH PLAYER PHOTOS */
 .ctx-chip {
+  min-height: 52px;
+  min-width: 190px;
   font-size: .75rem;
-  padding: .3rem .85rem;
-  border-radius: 20px;
+  padding: .38rem .95rem;
+  border-radius: 28px;
   background: var(--surf2);
   border: 1px solid var(--border);
   color: var(--muted);
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: .65rem;
 }
 
 .ctx-chip.selected {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: rgba(198,146,20,.08);
+}
+
+.ctx-chip.plain {
+  justify-content: center;
+}
+
+.ctx-player-img {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid rgba(255,255,255,.16);
+  background: var(--surf);
+  flex-shrink: 0;
+}
+
+.ctx-player-fallback {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--surf);
+  border: 1px solid rgba(255,255,255,.16);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: .85rem;
+  flex-shrink: 0;
+}
+
+.ctx-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
+  min-width: 0;
+}
+
+.ctx-label {
+  font-size: .58rem;
+  text-transform: uppercase;
+  letter-spacing: .11em;
+  color: var(--muted);
+  margin-bottom: .18rem;
+}
+
+.ctx-name {
+  font-size: .82rem;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+.ctx-chip.passer-chip.selected {
+  border-color: #5ab4f5;
+  color: #5ab4f5;
+  background: rgba(90,180,245,.08);
+}
+
+.ctx-chip.passer-chip.selected .ctx-name {
+  color: #5ab4f5;
+}
+
+.ctx-chip.setter-chip.selected {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: rgba(198,146,20,.08);
+}
+
+.ctx-chip.setter-chip.selected .ctx-name {
+  color: var(--gold);
+}
+
+.ctx-chip.hitter-chip.selected {
+  border-color: var(--green);
+  color: var(--green);
+  background: rgba(34,197,94,.08);
+}
+
+.ctx-chip.hitter-chip.selected .ctx-name {
+  color: var(--green);
+}
+
+.ctx-chip.rotation-chip.selected {
+  border-color: var(--purple);
+  color: var(--purple);
+  background: rgba(167,139,250,.08);
+}
+
+.ctx-chip.rotation-chip.selected .ctx-name {
+  color: var(--purple);
+}
+
+.ctx-chip.rec-chip.selected {
   border-color: var(--gold);
   color: var(--gold);
   background: rgba(198,146,20,.08);
@@ -409,6 +512,7 @@ header {
   .col { border-right: none; border-bottom: 1px solid var(--border); }
   .score-pct { font-size: 3rem; }
   .score-bar { flex-wrap: wrap; gap: .75rem; }
+  .ctx-chip { min-width: 150px; }
 }
 </style>
 </head>
@@ -422,8 +526,8 @@ header {
 
 <div class="score-bar" id="scoreBar">
   <div class="score-context" id="ctxLeft">
-    <div class="ctx-chip" id="ctxRotation">Rotation: —</div>
-    <div class="ctx-chip" id="ctxPasser">Passer: —</div>
+    <div class="ctx-chip rotation-chip plain" id="ctxRotation">Rotation: —</div>
+    <div class="ctx-chip passer-chip plain" id="ctxPasser">Passer: —</div>
   </div>
 
   <div class="score-main">
@@ -434,9 +538,9 @@ header {
   </div>
 
   <div class="score-context" id="ctxRight">
-    <div class="ctx-chip" id="ctxSetter">Setter: —</div>
-    <div class="ctx-chip" id="ctxHitter">Hitter: —</div>
-    <div class="ctx-chip" id="ctxRec">Receptions: —</div>
+    <div class="ctx-chip setter-chip plain" id="ctxSetter">Setter: —</div>
+    <div class="ctx-chip hitter-chip plain" id="ctxHitter">Hitter: —</div>
+    <div class="ctx-chip rec-chip plain" id="ctxRec">Receptions: —</div>
   </div>
 
   <button class="clear-btn" onclick="clearAll()">✕ Reset</button>
@@ -704,6 +808,76 @@ function getOverallAverage() {
   return agg ? agg.xso : 0;
 }
 
+/* TOP SCORE BAR RENDERING */
+function renderEmptyContext(el, label) {
+  el.classList.remove("selected");
+  el.classList.add("plain");
+  el.innerHTML = `${label}: —`;
+}
+
+function renderRotationContext(el, rotation) {
+  if (!rotation) {
+    renderEmptyContext(el, "Rotation");
+    return;
+  }
+
+  el.classList.add("selected");
+  el.classList.remove("plain");
+
+  el.innerHTML = `
+    <div class="ctx-player-fallback">R</div>
+    <div class="ctx-text">
+      <div class="ctx-label">Rotation</div>
+      <div class="ctx-name">Rotation ${rotation}</div>
+    </div>
+  `;
+}
+
+function renderPlayerContext(el, role, name) {
+  if (!name) {
+    renderEmptyContext(el, role);
+    return;
+  }
+
+  el.classList.add("selected");
+  el.classList.remove("plain");
+
+  const imgPath = playerImagePath(name);
+  const shortName = name.split(" ")[0];
+
+  el.innerHTML = `
+    <img 
+      class="ctx-player-img"
+      src="${imgPath}" 
+      alt="${name}"
+      onerror="this.outerHTML='<div class=&quot;ctx-player-fallback&quot;>${initials(name)}</div>';"
+    >
+    <div class="ctx-text">
+      <div class="ctx-label">${role}</div>
+      <div class="ctx-name">${shortName}</div>
+    </div>
+  `;
+}
+
+function renderReceptionsContext(el, n) {
+  if (!n && n !== 0) {
+    renderEmptyContext(el, "Receptions");
+    return;
+  }
+
+  el.classList.add("selected");
+  el.classList.remove("plain");
+
+  el.innerHTML = `
+    <div class="ctx-player-fallback">#</div>
+    <div class="ctx-text">
+      <div class="ctx-label">Samples</div>
+      <div class="ctx-name">${n} receptions</div>
+    </div>
+  `;
+}
+
+/* BUILD COLUMNS */
 function buildRotations() {
   const list = document.getElementById("rotationList");
   list.innerHTML = "";
@@ -753,7 +927,7 @@ function buildPassers() {
 
     const st = aggregate(rows);
 
-    if (selRotation && !st) {
+    if (selRotation && (!st || st.n < 2)) {
       return;
     }
 
@@ -902,6 +1076,7 @@ function makeCard(name, role, xso, sub) {
   return div;
 }
 
+/* SELECTION */
 function selectRotation(rot) {
   selRotation = String(selRotation) === String(rot) ? null : rot;
   selHitter = null;
@@ -916,7 +1091,7 @@ function selectRotation(rot) {
 
     const st = aggregate(rows);
 
-    if (!st) {
+    if (!st || st.n < 2) {
       selPasser = null;
       selHitter = null;
     }
@@ -986,6 +1161,7 @@ function refreshAll() {
   refreshScore();
 }
 
+/* HIGHLIGHTING */
 function highlightRotations() {
   document.querySelectorAll("#rotationList .pcard").forEach(card => {
     const rot = card.getAttribute("data-rotation");
@@ -1018,6 +1194,7 @@ function highlightHitters() {
   });
 }
 
+/* LOOKUP */
 function findResult() {
   const hasR = !!selRotation;
   const hasP = !!selPasser;
@@ -1127,6 +1304,11 @@ function findResult() {
       String(x.rotation) === String(selRotation) &&
       x.passer === dataPasser
     ));
+
+    if (!row || row.n < 2) {
+      row = null;
+    }
+
     source = "passer_given_rotation_expected_sideout.csv";
   }
 
@@ -1152,6 +1334,7 @@ function findResult() {
   return { row, source };
 }
 
+/* SCORE DISPLAY */
 function refreshScore() {
   const pctEl   = document.getElementById("scorePct");
   const metaEl  = document.getElementById("scoreMeta");
@@ -1164,15 +1347,10 @@ function refreshScore() {
   const ctxH    = document.getElementById("ctxHitter");
   const ctxR    = document.getElementById("ctxRec");
 
-  ctxRot.textContent = selRotation ? "Rotation: " + selRotation : "Rotation: —";
-  ctxP.textContent   = selPasser ? "Pass: " + selPasser.split(" ")[0] : "Passer: —";
-  ctxS.textContent   = selSetter ? "Set: "  + selSetter.split(" ")[0] : "Setter: —";
-  ctxH.textContent   = selHitter ? "Hit: "  + selHitter.split(" ")[0] : "Hitter: —";
-
-  ctxRot.classList.toggle("selected", !!selRotation);
-  ctxP.classList.toggle("selected", !!selPasser);
-  ctxS.classList.toggle("selected", !!selSetter);
-  ctxH.classList.toggle("selected", !!selHitter);
+  renderRotationContext(ctxRot, selRotation);
+  renderPlayerContext(ctxP, "Passer", selPasser);
+  renderPlayerContext(ctxS, "Setter", selSetter);
+  renderPlayerContext(ctxH, "Hitter", selHitter);
 
   const result = findResult();
   const row = result.row;
@@ -1185,8 +1363,7 @@ function refreshScore() {
     metaEl.innerHTML = "No Data on Grouping";
     vsEl.textContent = "";
 
-    ctxR.textContent = "Receptions: —";
-    ctxR.classList.remove("selected");
+    renderEmptyContext(ctxR, "Receptions");
 
     bar.classList.add("has-result");
     return;
@@ -1208,8 +1385,8 @@ function refreshScore() {
   vsEl.textContent = (diff >= 0 ? "+" : "") + diff.toFixed(1) + "pp vs team avg";
   vsEl.className = "vs-avg " + (diff >= 0 ? "above" : "below");
 
-  ctxR.textContent = n + " receptions";
-  ctxR.classList.add("selected");
+  renderReceptionsContext(ctxR, n);
+
   bar.classList.add("has-result");
 }
 
