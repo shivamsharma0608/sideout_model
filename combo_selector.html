@@ -295,6 +295,15 @@ header {
   font-size: 1rem;
   flex-shrink: 0;
   transition: all .15s;
+  overflow: hidden;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
 }
 
 .avatar.rotation { background: linear-gradient(135deg, #31205f, #5b3aaa); color: var(--purple); }
@@ -324,6 +333,11 @@ header {
   font-size: 1.3rem;
   flex-shrink: 0;
   transition: color .15s;
+}
+
+.rate-na {
+  color: var(--muted);
+  font-size: 1rem;
 }
 
 .check-icon {
@@ -430,7 +444,7 @@ header {
       <div>
         <div class="col-title passer">Passer</div>
       </div>
-      <div class="col-sub">Optional</div>
+      <div class="col-sub">All players</div>
     </div>
     <div class="player-list" id="passerList"></div>
   </div>
@@ -469,7 +483,6 @@ header {
 <script>
 /* -------------------------------------------------------
    CSV FILE PATHS
-   Put these files inside a folder called data/
 ------------------------------------------------------- */
 
 const FILES = {
@@ -489,6 +502,49 @@ const FILES = {
 };
 
 const TRUE_SETTERS = ["Maija Nepszy", "Mika Rome"];
+
+const ALL_UCSD_PLAYERS = [
+  "Alba Canko",
+  "Ireland McNees",
+  "Iris Canko",
+  "Jasmin Saran",
+  "Katelyn Hernandez",
+  "Katie Rapp",
+  "Kayla Uhlick",
+  "Lucia Barroso",
+  "Madison Johnson",
+  "Maija Nepszy",
+  "Maria Fernanda Afonso",
+  "Marleena Catalan",
+  "Mika Rome",
+  "Mina Olgar",
+  "Molly McCluskey",
+  "Paulina Baillie",
+  "Stefania Alupei",
+  "Zahara Quraishi"
+];
+
+const PLAYER_IMAGE_FILES = {
+  "Alba Canko": "alba-canko.jpg",
+  "Ireland McNees": "ireland-mcnees.jpg",
+  "Iris Canko": "iris-canko.jpg",
+  "Jasmin Saran": "jasmin-saran.jpg",
+  "Jasmine Saran": "jasmin-saran.jpg",
+  "Katelyn Hernandez": "katelyn-hernandez.jpg",
+  "Katie Rapp": "katie-rapp.jpg",
+  "Kayla Uhlick": "kayla-uhlick.jpg",
+  "Lucia Barroso": "lucia-barroso.jpg",
+  "Madison Johnson": "madison-johnson.jpg",
+  "Maija Nepszy": "maija-nepszy.jpg",
+  "Maria Fernanda Afonso": "maria-fernanda-afonso.jpg",
+  "Marleena Catalan": "marleena-catalan.jpg",
+  "Mika Rome": "mika-rome.jpg",
+  "Mina Olgar": "mina-olgar.jpg",
+  "Molly McCluskey": "molly-mccluskey.jpg",
+  "Paulina Baillie": "paulina-baillie.jpg",
+  "Stefania Alupei": "stefania-alupei.jpg",
+  "Zahara Quraishi": "zahara-quraishi.jpg"
+};
 
 let DATA = {};
 let TEAM_AVG = 0;
@@ -566,6 +622,11 @@ function cleanName(x) {
   return String(x ?? "").trim();
 }
 
+function normalizePlayerName(name) {
+  if (name === "Jasmin Saran") return "Jasmine Saran";
+  return name;
+}
+
 function toNumber(x) {
   const n = Number(x);
   return Number.isFinite(n) ? n : 0;
@@ -598,7 +659,13 @@ function uniqueValues(rows, col) {
   )].sort();
 }
 
+function playerImagePath(name) {
+  const fileName = PLAYER_IMAGE_FILES[name];
+  return fileName ? "images/" + fileName : "";
+}
+
 function rateColor(v) {
+  if (v === null || v === undefined) return "rate-na";
   if (v >= 70) return "rate-hot";
   if (v >= 58) return "rate-warm";
   if (v >= 50) return "rate-mid";
@@ -655,7 +722,7 @@ function buildRotations() {
     );
 
     const st = aggregate(rows);
-    const xso = st ? st.xso : 0;
+    const xso = st ? st.xso : null;
     const n = st ? st.n : 0;
 
     const card = makeCard("Rotation " + rot, "rotation", xso, n + " receptions");
@@ -669,14 +736,23 @@ function buildPassers() {
   const list = document.getElementById("passerList");
   list.innerHTML = "";
 
-  const passers = uniqueValues(DATA.passerSetter, "passer");
+  ALL_UCSD_PLAYERS.forEach(name => {
+    const dataName = normalizePlayerName(name);
 
-  passers.forEach(name => {
-    const rows = DATA.passerSetter.filter(x => x.passer === name);
+    const rows = DATA.passerSetter.filter(x =>
+      x.passer === dataName
+    );
+
     const st = aggregate(rows);
-    if (!st) return;
 
-    const card = makeCard(name, "passer", st.xso, st.n + " receptions");
+    let card;
+
+    if (!st) {
+      card = makeCard(name, "passer", null, "No passing data");
+    } else {
+      card = makeCard(name, "passer", st.xso, st.n + " receptions");
+    }
+
     card.addEventListener("click", () => selectPasser(name));
     list.appendChild(card);
   });
@@ -688,7 +764,13 @@ function buildSetters() {
 
   TRUE_SETTERS.forEach(name => {
     const row = DATA.setter.find(x => x.setter_group === name);
-    if (!row) return;
+
+    if (!row) {
+      const card = makeCard(name, "setter", null, "No setting data");
+      card.addEventListener("click", () => selectSetter(name));
+      list.appendChild(card);
+      return;
+    }
 
     const xso = getXSO(row);
     const n = getN(row);
@@ -712,20 +794,22 @@ function buildHitters() {
     return;
   }
 
+  const dataPasser = normalizePlayerName(selPasser);
+
   let combos = [];
 
   if (selRotation) {
     combos = DATA.rotationPasserSetterHitter
       .filter(row =>
         String(row.rotation) === String(selRotation) &&
-        row.passer === selPasser &&
+        row.passer === dataPasser &&
         row.setter_group === selSetter
       )
       .sort((a, b) => getXSO(b) - getXSO(a));
   } else {
     combos = DATA.passerSetterHitter
       .filter(row =>
-        row.passer === selPasser &&
+        row.passer === dataPasser &&
         row.setter_group === selSetter
       )
       .sort((a, b) => getXSO(b) - getXSO(a));
@@ -746,14 +830,16 @@ function buildHitters() {
     const n = getN(row);
     const sideouts = getSideouts(row);
 
+    const displayHitter = hitter === "Jasmine Saran" ? "Jasmin Saran" : hitter;
+
     const card = makeCard(
-      hitter,
+      displayHitter,
       "hitter",
       xso,
       n + " recs · " + sideouts + " sideouts"
     );
 
-    card.addEventListener("click", () => selectHitter(hitter));
+    card.addEventListener("click", () => selectHitter(displayHitter));
     list.appendChild(card);
   });
 }
@@ -763,13 +849,39 @@ function makeCard(name, role, xso, sub) {
   div.className = "pcard";
   div.setAttribute("data-name", name);
 
+  let avatarContent = "";
+
+  if (role === "rotation") {
+    avatarContent = "R";
+  } else {
+    const imgPath = playerImagePath(name);
+
+    avatarContent = `
+      <img 
+        src="${imgPath}" 
+        alt="${name}"
+        onerror="this.style.display='none'; this.parentElement.textContent='${initials(name)}';"
+      >
+    `;
+  }
+
+  const rateDisplay =
+    xso === null || xso === undefined
+      ? "N/A"
+      : xso.toFixed(1) + "%";
+
+  const rateClass =
+    xso === null || xso === undefined
+      ? "rate-na"
+      : rateColor(xso);
+
   div.innerHTML = `
-    <div class="avatar ${role}">${role === "rotation" ? "R" : initials(name)}</div>
+    <div class="avatar ${role}">${avatarContent}</div>
     <div class="pcard-info">
       <div class="pcard-name">${name}</div>
       <div class="pcard-stat">${sub}</div>
     </div>
-    <div class="pcard-rate ${rateColor(xso)}">${xso.toFixed(1)}%</div>
+    <div class="pcard-rate ${rateClass}">${rateDisplay}</div>
     <div class="check-icon">✓</div>
   `;
 
@@ -868,24 +980,27 @@ function findResult() {
   const hasS = !!selSetter;
   const hasH = !!selHitter;
 
+  const dataPasser = normalizePlayerName(selPasser);
+  const dataHitter = normalizePlayerName(selHitter);
+
   let row = null;
   let source = "";
 
   if (hasR && hasP && hasS && hasH) {
     row = DATA.rotationPasserSetterHitter.find(x =>
       String(x.rotation) === String(selRotation) &&
-      x.passer === selPasser &&
+      x.passer === dataPasser &&
       x.setter_group === selSetter &&
-      x.hitter === selHitter
+      x.hitter === dataHitter
     );
     source = "rotation_passer_setter_hitter_xso.csv";
   }
 
   else if (hasP && hasS && hasH) {
     row = DATA.passerSetterHitter.find(x =>
-      x.passer === selPasser &&
+      x.passer === dataPasser &&
       x.setter_group === selSetter &&
-      x.hitter === selHitter
+      x.hitter === dataHitter
     );
     source = "passer_setter_hitter_xso_all_combinations.csv";
   }
@@ -894,7 +1009,7 @@ function findResult() {
     row = DATA.rotationSetterHitter.find(x =>
       String(x.rotation) === String(selRotation) &&
       x.setter_group === selSetter &&
-      x.hitter === selHitter
+      x.hitter === dataHitter
     );
     source = "rotation_setter_hitter_xso.csv";
   }
@@ -902,7 +1017,7 @@ function findResult() {
   else if (hasS && hasH) {
     row = DATA.setterHitter.find(x =>
       x.setter_group === selSetter &&
-      x.hitter === selHitter
+      x.hitter === dataHitter
     );
     source = "setter_hitter_xso.csv";
   }
@@ -910,7 +1025,7 @@ function findResult() {
   else if (hasR && hasP && hasS) {
     row = DATA.passerSetterGivenRotation.find(x =>
       String(x.rotation) === String(selRotation) &&
-      x.passer === selPasser &&
+      x.passer === dataPasser &&
       x.setter_group === selSetter
     );
     source = "passer_setter_given_rotation_expected_sideout.csv";
@@ -918,7 +1033,7 @@ function findResult() {
 
   else if (hasP && hasS) {
     row = DATA.passerSetter.find(x =>
-      x.passer === selPasser &&
+      x.passer === dataPasser &&
       x.setter_group === selSetter
     );
     source = "passer_setter_xso.csv";
@@ -927,8 +1042,8 @@ function findResult() {
   else if (hasR && hasP && hasH) {
     row = DATA.hitterPasserGivenRotation.find(x =>
       String(x.rotation) === String(selRotation) &&
-      x.passer === selPasser &&
-      x.hitter === selHitter
+      x.passer === dataPasser &&
+      x.hitter === dataHitter
     );
     source = "hitter_passer_given_rotation_expected_sideout.csv";
   }
@@ -944,7 +1059,7 @@ function findResult() {
   else if (hasR && hasH) {
     row = DATA.hitterGivenRotation.find(x =>
       String(x.rotation) === String(selRotation) &&
-      x.hitter === selHitter
+      x.hitter === dataHitter
     );
     source = "hitter_given_rotation_expected_sideout.csv";
   }
@@ -958,14 +1073,14 @@ function findResult() {
 
   else if (hasH) {
     row = aggregate(DATA.setterHitter.filter(x =>
-      x.hitter === selHitter
+      x.hitter === dataHitter
     ));
     source = "setter_hitter_xso.csv";
   }
 
   else if (hasP) {
     row = aggregate(DATA.passerSetter.filter(x =>
-      x.passer === selPasser
+      x.passer === dataPasser
     ));
     source = "passer_setter_xso.csv";
   }
