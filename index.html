@@ -3,1408 +3,848 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>UCSD WVB · Lineup Builder</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-
+<title>UCSD WVB · Side-Out Analytics</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
-  --navy:    #002147;
-  --navy2:   #00264f;
-  --gold:    #C69214;
-  --gold2:   #e8aa1a;
-  --blue:    #00629B;
-  --bg:      #0b1724;
-  --surf:    #0f2035;
-  --surf2:   #152840;
-  --border:  #1c3550;
-  --text:    #dce8f5;
-  --muted:   #5a7a99;
-  --dim:     #2a4560;
-  --green:   #22c55e;
-  --amber:   #fbbf24;
-  --red:     #f87171;
-  --purple:  #a78bfa;
+  --navy:#002147;--navy2:#00305e;--gold:#C69214;--gold2:#e8ad1e;--blue:#00629B;
+  --bg:#0a1628;--surface:#111f35;--surface2:#162843;--border:rgba(255,255,255,0.08);
+  --text:#e8edf5;--muted:#7a90b0;--green:#22c55e;--red:#ef4444;--amber:#f59e0b;
+  --purple:#a78bfa;--dim:#2a4560;
 }
-
-* { box-sizing: border-box; margin: 0; padding: 0; }
-
-body {
-  font-family: 'DM Sans', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  overflow-x: hidden;
-}
-
-/* HEADER */
-header {
-  background: var(--navy);
-  border-bottom: 1px solid var(--border);
-  padding: 0 2rem;
-  height: 58px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.brand {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 1.4rem;
-  color: var(--gold);
-  letter-spacing: .06em;
-}
-
-.brand span {
-  color: rgba(255,255,255,.5);
-  font-size: .9rem;
-  margin-left: .5rem;
-  letter-spacing: .12em;
-}
-
-.avg-chip {
-  font-size: .75rem;
-  color: var(--muted);
-  background: rgba(198,146,20,.08);
-  border: 1px solid rgba(198,146,20,.2);
-  border-radius: 20px;
-  padding: .25rem .9rem;
-}
-
-.avg-chip strong { color: var(--gold); }
-
-/* SCORE DISPLAY */
-.score-bar {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  background: var(--navy2);
-  border-bottom: 1px solid var(--border);
-  padding: 1.4rem 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 2.5rem;
-  transition: background .3s;
-}
-
-.score-bar.has-result { background: var(--navy); }
-
-.score-main {
-  text-align: center;
-}
-
-.score-pct {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 4.5rem;
-  line-height: 1;
-  letter-spacing: .02em;
-  color: var(--dim);
-  transition: color .3s, transform .2s;
-}
-
-.score-pct.lit { transform: scale(1.04); }
-
-.score-label {
-  font-size: .68rem;
-  font-weight: 600;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin-top: .15rem;
-}
-
-.score-meta {
-  font-size: .78rem;
-  color: var(--muted);
-  min-height: 1.1rem;
-  text-align: center;
-  margin-top: .25rem;
-}
-
-.score-meta strong { color: var(--text); }
-
-.score-context {
-  display: flex;
-  flex-direction: column;
-  gap: .5rem;
-}
-
-/* TOP CONTEXT CHIPS WITH PLAYER PHOTOS */
-.ctx-chip {
-  min-height: 52px;
-  min-width: 190px;
-  font-size: .75rem;
-  padding: .38rem .95rem;
-  border-radius: 28px;
-  background: var(--surf2);
-  border: 1px solid var(--border);
-  color: var(--muted);
-  white-space: nowrap;
-  display: flex;
-  align-items: center;
-  gap: .65rem;
-}
-
-.ctx-chip.selected {
-  border-color: var(--gold);
-  color: var(--gold);
-  background: rgba(198,146,20,.08);
-}
-
-.ctx-chip.plain {
-  justify-content: center;
-}
-
-.ctx-player-img {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 1px solid rgba(255,255,255,.16);
-  background: var(--surf);
-  flex-shrink: 0;
-}
-
-.ctx-player-fallback {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: var(--surf);
-  border: 1px solid rgba(255,255,255,.16);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: .85rem;
-  flex-shrink: 0;
-}
-
-.ctx-text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.05;
-  min-width: 0;
-}
-
-.ctx-label {
-  font-size: .58rem;
-  text-transform: uppercase;
-  letter-spacing: .11em;
-  color: var(--muted);
-  margin-bottom: .18rem;
-}
-
-.ctx-name {
-  font-size: .82rem;
-  font-weight: 700;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 120px;
-}
-
-.ctx-chip.passer-chip.selected {
-  border-color: #5ab4f5;
-  color: #5ab4f5;
-  background: rgba(90,180,245,.08);
-}
-
-.ctx-chip.passer-chip.selected .ctx-name {
-  color: #5ab4f5;
-}
-
-.ctx-chip.setter-chip.selected {
-  border-color: var(--gold);
-  color: var(--gold);
-  background: rgba(198,146,20,.08);
-}
-
-.ctx-chip.setter-chip.selected .ctx-name {
-  color: var(--gold);
-}
-
-.ctx-chip.hitter-chip.selected {
-  border-color: var(--green);
-  color: var(--green);
-  background: rgba(34,197,94,.08);
-}
-
-.ctx-chip.hitter-chip.selected .ctx-name {
-  color: var(--green);
-}
-
-.ctx-chip.rotation-chip.selected {
-  border-color: var(--purple);
-  color: var(--purple);
-  background: rgba(167,139,250,.08);
-}
-
-.ctx-chip.rotation-chip.selected .ctx-name {
-  color: var(--purple);
-}
-
-.ctx-chip.rec-chip.selected {
-  border-color: var(--gold);
-  color: var(--gold);
-  background: rgba(198,146,20,.08);
-}
-
-.vs-avg {
-  font-size: .8rem;
-  color: var(--muted);
-  text-align: center;
-}
-
-.vs-avg.above { color: var(--green); }
-.vs-avg.below { color: var(--red); }
-
-/* GLOBAL RESET */
-.clear-btn {
-  position: absolute;
-  right: 2rem;
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--muted);
-  font-family: 'DM Sans', sans-serif;
-  font-size: .75rem;
-  padding: .4rem .85rem;
-  cursor: pointer;
-  transition: all .15s;
-}
-
-.clear-btn:hover {
-  border-color: var(--red);
-  color: var(--red);
-}
-
-/* LAYOUT */
-.columns {
-  display: grid;
-  grid-template-columns: 0.75fr 1fr 1fr 1fr;
-  gap: 0;
-  min-height: calc(100vh - 58px - 120px);
-}
-
-.col {
-  border-right: 1px solid var(--border);
-  padding: 1.5rem 1.25rem;
-}
-
-.col:last-child { border-right: none; }
-
-.col-header {
-  display: flex;
-  align-items: center;
-  gap: .65rem;
-  margin-bottom: 1.25rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--border);
-}
-
-/* COLUMN CLEAR X BUTTONS */
-.col-clear {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--surf2);
-  color: var(--muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1rem;
-  font-weight: 700;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: all .15s;
-  font-family: 'DM Sans', sans-serif;
-}
-
-.col-clear:hover {
-  color: var(--red);
-  border-color: var(--red);
-  background: rgba(248,113,113,.08);
-}
-
-.col-clear.rotation { color: var(--purple); }
-.col-clear.passer   { color: #5ab4f5; }
-.col-clear.setter   { color: var(--gold); }
-.col-clear.hitter   { color: var(--green); }
-
-.col-clear.rotation:hover,
-.col-clear.passer:hover,
-.col-clear.setter:hover,
-.col-clear.hitter:hover {
-  color: var(--red);
-}
-
-.col-title {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 1.1rem;
-  letter-spacing: .06em;
-}
-
-.col-title.rotation { color: var(--purple); }
-.col-title.passer   { color: #5ab4f5; }
-.col-title.setter   { color: var(--gold); }
-.col-title.hitter   { color: var(--green); }
-
-.col-sub {
-  font-size: .68rem;
-  color: var(--muted);
-  margin-left: auto;
-  text-align: right;
-  line-height: 1.4;
-}
-
-/* CARDS */
-.player-list {
-  display: flex;
-  flex-direction: column;
-  gap: .5rem;
-}
-
-.pcard {
-  display: flex;
-  align-items: center;
-  gap: .85rem;
-  padding: .75rem .9rem;
-  border-radius: 10px;
-  border: 1.5px solid var(--border);
-  background: var(--surf);
-  cursor: pointer;
-  transition: all .15s;
-  position: relative;
-  overflow: hidden;
-}
-
-.pcard::before {
-  content: '';
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 3px;
-  background: transparent;
-  transition: background .15s;
-}
-
-.pcard:hover {
-  border-color: var(--blue);
-  background: var(--surf2);
-}
-
-.pcard:hover::before { background: var(--blue); }
-
-.pcard.selected { background: var(--surf2); }
-
-.pcard.selected.rotation-sel { border-color: var(--purple); }
-.pcard.selected.passer-sel   { border-color: #5ab4f5; }
-.pcard.selected.setter-sel   { border-color: var(--gold); }
-.pcard.selected.hitter-sel   { border-color: var(--green); }
-
-.pcard.selected.rotation-sel::before { background: var(--purple); }
-.pcard.selected.passer-sel::before   { background: #5ab4f5; }
-.pcard.selected.setter-sel::before   { background: var(--gold); }
-.pcard.selected.hitter-sel::before   { background: var(--green); }
-
-.avatar {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 1rem;
-  flex-shrink: 0;
-  transition: all .15s;
-  overflow: hidden;
-}
-
-.avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 50%;
-  display: block;
-}
-
-.avatar.rotation { background: linear-gradient(135deg, #31205f, #5b3aaa); color: var(--purple); }
-.avatar.passer   { background: linear-gradient(135deg, #003d6b, #00629B); color: #5ab4f5; }
-.avatar.setter   { background: linear-gradient(135deg, #4a3200, #8a5800); color: var(--gold2); }
-.avatar.hitter   { background: linear-gradient(135deg, #0a3320, #0f5a30); color: var(--green); }
-
-.pcard-info { flex: 1; min-width: 0; }
-
-.pcard-name {
-  font-size: .84rem;
-  font-weight: 600;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.pcard-stat {
-  font-size: .7rem;
-  color: var(--muted);
-  margin-top: .15rem;
-}
-
-.pcard-rate {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 1.3rem;
-  flex-shrink: 0;
-  transition: color .15s;
-}
-
-.rate-na {
-  color: var(--muted);
-  font-size: 1rem;
-}
-
-.check-icon {
-  display: none;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  align-items: center;
-  justify-content: center;
-  font-size: .6rem;
-  font-weight: 700;
-  flex-shrink: 0;
-}
-
-.pcard.selected .check-icon { display: flex; }
-
-.pcard.selected.rotation-sel .check-icon { background: var(--purple); color: var(--navy); }
-.pcard.selected.passer-sel .check-icon   { background: #5ab4f5; color: var(--navy); }
-.pcard.selected.setter-sel .check-icon   { background: var(--gold); color: var(--navy); }
-.pcard.selected.hitter-sel .check-icon   { background: var(--green); color: var(--navy); }
-
-/* HITTER NOTE */
-.hitter-note {
-  font-size: .72rem;
-  color: var(--muted);
-  text-align: center;
-  padding: 1.5rem 1rem;
-  border: 1px dashed var(--border);
-  border-radius: 10px;
-  line-height: 1.5;
-  display: none;
-}
-
-.hitter-note.visible { display: block; }
-
-/* RATE COLORS */
-.rate-hot  { color: var(--green); }
-.rate-warm { color: #4ade80; }
-.rate-mid  { color: var(--amber); }
-.rate-cool { color: var(--red); }
-
-@media (max-width: 1000px) {
-  .columns { grid-template-columns: 1fr 1fr; }
-}
-
-@media (max-width: 700px) {
-  .columns { grid-template-columns: 1fr; }
-  .col { border-right: none; border-bottom: 1px solid var(--border); }
-  .score-pct { font-size: 3rem; }
-  .score-bar { flex-wrap: wrap; gap: .75rem; }
-  .ctx-chip { min-width: 150px; }
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+/* NAV */
+nav{background:rgba(0,21,47,0.97);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:200;display:flex;align-items:center;padding:0 2rem;height:60px;}
+.nav-brand{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:.08em;color:var(--gold);margin-right:2rem;}
+.nav-brand span{color:#fff;}
+.nav-tabs{display:flex;gap:0;flex:1;}
+.tab-btn{background:none;border:none;cursor:pointer;color:var(--muted);font-family:'DM Sans',sans-serif;
+  font-size:.78rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  padding:0 1.1rem;height:60px;border-bottom:2px solid transparent;transition:all .15s;}
+.tab-btn:hover{color:var(--text);}
+.tab-btn.active{color:var(--gold);border-bottom-color:var(--gold);}
+.nav-badge{font-size:.72rem;font-weight:600;background:rgba(198,146,20,.15);
+  border:1px solid rgba(198,146,20,.3);color:var(--gold2);padding:.25rem .8rem;border-radius:20px;}
+.panel{display:none;padding:2rem;max-width:1280px;margin:0 auto;}
+.panel.active{display:block;}
+
+/* shared */
+.slabel{font-size:.68rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+.card-head{background:var(--surface2);padding:.9rem 1.2rem;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;}
+.card-head h3{font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:.06em;color:var(--gold);}
+.card-head p{font-size:.72rem;color:var(--muted);}
+.card-body{padding:1.2rem;}
+.stat-pill{display:inline-flex;align-items:center;font-size:.7rem;font-weight:700;padding:.2rem .55rem;border-radius:20px;}
+.pill-green{background:rgba(34,197,94,.12);color:var(--green);}
+.pill-amber{background:rgba(245,158,11,.12);color:var(--amber);}
+.pill-red{background:rgba(239,68,68,.12);color:var(--red);}
+
+/* ══ TAB 1 — LINEUP BUILDER (Hannah's) ══ */
+.score-bar{background:var(--navy2);border-bottom:1px solid var(--border);
+  padding:1.2rem 2rem;display:flex;align-items:center;justify-content:center;
+  gap:2rem;transition:background .3s;position:relative;}
+.score-bar.has-result{background:var(--navy);}
+.score-main{text-align:center;}
+.score-pct{font-family:'Bebas Neue',sans-serif;font-size:4rem;line-height:1;
+  letter-spacing:.02em;color:var(--dim);transition:color .3s,transform .2s;}
+.score-pct.lit{transform:scale(1.04);}
+.score-label{font-size:.65rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:.1rem;}
+.score-meta{font-size:.76rem;color:var(--muted);min-height:1rem;text-align:center;margin-top:.2rem;}
+.score-meta strong{color:var(--text);}
+.score-context{display:flex;flex-direction:column;gap:.45rem;}
+.ctx-chip{min-height:48px;min-width:180px;font-size:.73rem;padding:.35rem .9rem;border-radius:28px;
+  background:var(--surface2);border:1px solid var(--border);color:var(--muted);
+  white-space:nowrap;display:flex;align-items:center;gap:.6rem;}
+.ctx-chip.selected{border-color:var(--gold);color:var(--gold);background:rgba(198,146,20,.08);}
+.ctx-chip.plain{justify-content:center;}
+.ctx-player-img{width:32px;height:32px;border-radius:50%;object-fit:cover;border:1px solid rgba(255,255,255,.16);background:var(--surface);flex-shrink:0;}
+.ctx-player-fallback{width:32px;height:32px;border-radius:50%;background:var(--surface);border:1px solid rgba(255,255,255,.16);
+  display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:.82rem;flex-shrink:0;}
+.ctx-text{display:flex;flex-direction:column;line-height:1.05;min-width:0;}
+.ctx-label{font-size:.56rem;text-transform:uppercase;letter-spacing:.11em;color:var(--muted);margin-bottom:.15rem;}
+.ctx-name{font-size:.8rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;max-width:110px;}
+.ctx-chip.passer-chip.selected{border-color:#5ab4f5;color:#5ab4f5;background:rgba(90,180,245,.08);}
+.ctx-chip.passer-chip.selected .ctx-name{color:#5ab4f5;}
+.ctx-chip.setter-chip.selected{border-color:var(--gold);color:var(--gold);background:rgba(198,146,20,.08);}
+.ctx-chip.setter-chip.selected .ctx-name{color:var(--gold);}
+.ctx-chip.hitter-chip.selected{border-color:var(--green);color:var(--green);background:rgba(34,197,94,.08);}
+.ctx-chip.hitter-chip.selected .ctx-name{color:var(--green);}
+.ctx-chip.rotation-chip.selected{border-color:var(--purple);color:var(--purple);background:rgba(167,139,250,.08);}
+.ctx-chip.rotation-chip.selected .ctx-name{color:var(--purple);}
+.vs-avg{font-size:.78rem;color:var(--muted);text-align:center;}
+.vs-avg.above{color:var(--green);}
+.vs-avg.below{color:var(--red);}
+.clear-btn{position:absolute;right:2rem;background:transparent;border:1px solid var(--border);
+  border-radius:8px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:.73rem;
+  padding:.38rem .8rem;cursor:pointer;transition:all .15s;}
+.clear-btn:hover{border-color:var(--red);color:var(--red);}
+.columns{display:grid;grid-template-columns:.75fr 1fr 1fr 1fr;gap:0;min-height:60vh;}
+.col{border-right:1px solid var(--border);padding:1.4rem 1.1rem;}
+.col:last-child{border-right:none;}
+.col-header{display:flex;align-items:center;gap:.6rem;margin-bottom:1.1rem;
+  padding-bottom:.9rem;border-bottom:1px solid var(--border);}
+.col-clear{width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);
+  color:var(--muted);display:flex;align-items:center;justify-content:center;
+  font-size:1rem;font-weight:700;cursor:pointer;flex-shrink:0;transition:all .15s;font-family:'DM Sans',sans-serif;}
+.col-clear:hover{color:var(--red);border-color:var(--red);background:rgba(248,113,113,.08);}
+.col-clear.rotation{color:var(--purple);}
+.col-clear.passer{color:#5ab4f5;}
+.col-clear.setter{color:var(--gold);}
+.col-clear.hitter{color:var(--green);}
+.col-title{font-family:'Bebas Neue',sans-serif;font-size:1.05rem;letter-spacing:.06em;}
+.col-title.rotation{color:var(--purple);}
+.col-title.passer{color:#5ab4f5;}
+.col-title.setter{color:var(--gold);}
+.col-title.hitter{color:var(--green);}
+.col-sub{font-size:.65rem;color:var(--muted);margin-left:auto;text-align:right;line-height:1.4;}
+.player-list{display:flex;flex-direction:column;gap:.45rem;}
+.pcard{display:flex;align-items:center;gap:.8rem;padding:.7rem .85rem;border-radius:10px;
+  border:1.5px solid var(--border);background:var(--surface);cursor:pointer;transition:all .15s;
+  position:relative;overflow:hidden;}
+.pcard::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:transparent;transition:background .15s;}
+.pcard:hover{border-color:var(--blue);background:var(--surface2);}
+.pcard:hover::before{background:var(--blue);}
+.pcard.selected{background:var(--surface2);}
+.pcard.selected.rotation-sel{border-color:var(--purple);}
+.pcard.selected.passer-sel{border-color:#5ab4f5;}
+.pcard.selected.setter-sel{border-color:var(--gold);}
+.pcard.selected.hitter-sel{border-color:var(--green);}
+.pcard.selected.rotation-sel::before{background:var(--purple);}
+.pcard.selected.passer-sel::before{background:#5ab4f5;}
+.pcard.selected.setter-sel::before{background:var(--gold);}
+.pcard.selected.hitter-sel::before{background:var(--green);}
+.avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-family:'Bebas Neue',sans-serif;font-size:.95rem;flex-shrink:0;transition:all .15s;overflow:hidden;}
+.avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;}
+.avatar.rotation{background:linear-gradient(135deg,#31205f,#5b3aaa);color:var(--purple);}
+.avatar.passer{background:linear-gradient(135deg,#003d6b,#00629B);color:#5ab4f5;}
+.avatar.setter{background:linear-gradient(135deg,#4a3200,#8a5800);color:var(--gold2);}
+.avatar.hitter{background:linear-gradient(135deg,#0a3320,#0f5a30);color:var(--green);}
+.pcard-info{flex:1;min-width:0;}
+.pcard-name{font-size:.82rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pcard-stat{font-size:.68rem;color:var(--muted);margin-top:.12rem;}
+.pcard-rate{font-family:'Bebas Neue',sans-serif;font-size:1.25rem;flex-shrink:0;transition:color .15s;}
+.rate-na{color:var(--muted);font-size:.95rem;}
+.check-icon{display:none;width:17px;height:17px;border-radius:50%;align-items:center;justify-content:center;font-size:.58rem;font-weight:700;flex-shrink:0;}
+.pcard.selected .check-icon{display:flex;}
+.pcard.selected.rotation-sel .check-icon{background:var(--purple);color:var(--navy);}
+.pcard.selected.passer-sel .check-icon{background:#5ab4f5;color:var(--navy);}
+.pcard.selected.setter-sel .check-icon{background:var(--gold);color:var(--navy);}
+.pcard.selected.hitter-sel .check-icon{background:var(--green);color:var(--navy);}
+.hitter-note{font-size:.7rem;color:var(--muted);text-align:center;padding:1.4rem .9rem;
+  border:1px dashed var(--border);border-radius:10px;line-height:1.5;display:none;}
+.hitter-note.visible{display:block;}
+.rate-hot{color:var(--green);}
+.rate-warm{color:#4ade80;}
+.rate-mid{color:var(--amber);}
+.rate-cool{color:var(--red);}
+
+/* ══ TAB 2 — PLAYER EXPLORER ══ */
+#tab-players .grid-2{display:grid;grid-template-columns:300px 1fr;gap:1.5rem;}
+.p-list{display:flex;flex-direction:column;gap:.4rem;}
+.p-row{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:.7rem .95rem;cursor:pointer;display:flex;align-items:center;gap:.75rem;transition:all .15s;}
+.p-row:hover{border-color:var(--blue);background:var(--surface2);}
+.p-row.active{border-color:var(--gold);background:var(--surface2);}
+.p-row.active .p-name{color:var(--gold);}
+.p-init{width:33px;height:33px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,var(--navy2),var(--blue));
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Bebas Neue',sans-serif;font-size:.82rem;color:#fff;}
+.p-row.active .p-init{background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--navy);}
+.p-name{font-size:.83rem;font-weight:600;flex:1;}
+.detail-sticky{position:sticky;top:76px;}
+.detail-hero{background:linear-gradient(135deg,var(--navy2),#003870);border-radius:14px 14px 0 0;
+  padding:1.3rem 1.5rem;display:flex;align-items:center;gap:1rem;}
+.detail-avatar{width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));
+  display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:1.3rem;color:var(--navy);flex-shrink:0;}
+.detail-hero h2{font-family:'Bebas Neue',sans-serif;font-size:1.45rem;letter-spacing:.04em;}
+.detail-hero p{font-size:.76rem;color:#8fa8c4;margin-top:.15rem;}
+.detail-stats{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--border);}
+.dstat{padding:.85rem;text-align:center;border-right:1px solid var(--border);}
+.dstat:last-child{border-right:none;}
+.dstat-val{font-family:'Bebas Neue',sans-serif;font-size:1.85rem;line-height:1;}
+.dstat-label{font-size:.63rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:.22rem;}
+.detail-section{padding:1rem 1.35rem;border-bottom:1px solid var(--border);}
+.detail-section:last-child{border-bottom:none;}
+.dsec-title{font-size:.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.75rem;}
+.rot-bars{display:flex;flex-direction:column;gap:.42rem;}
+.rot-row{display:flex;align-items:center;gap:.65rem;}
+.rot-lbl{font-size:.7rem;font-weight:600;color:var(--muted);width:44px;flex-shrink:0;}
+.rot-track{flex:1;height:19px;background:rgba(255,255,255,.05);border-radius:5px;overflow:hidden;}
+.rot-fill{height:100%;border-radius:5px;display:flex;align-items:center;padding-left:7px;
+  font-size:.66rem;font-weight:700;color:#fff;transition:width .5s ease;}
+.rot-n{font-size:.63rem;color:var(--muted);width:34px;text-align:right;flex-shrink:0;}
+.pq-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.42rem;}
+.pq-cell{background:rgba(255,255,255,.04);border-radius:8px;padding:.55rem;text-align:center;}
+.pq-lbl{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.18rem;}
+.pq-val{font-family:'Bebas Neue',sans-serif;font-size:1.15rem;}
+.pq-n{font-size:.58rem;color:var(--muted);}
+.hitter-rows{display:flex;flex-direction:column;gap:.32rem;}
+.hitter-row{display:flex;align-items:center;gap:.65rem;padding:.48rem .65rem;border-radius:8px;background:rgba(255,255,255,.03);}
+.hitter-row:hover{background:rgba(255,255,255,.06);}
+.hitter-name{flex:1;font-size:.8rem;font-weight:500;}
+.hitter-bar-wrap{width:100px;height:5px;background:rgba(255,255,255,.08);border-radius:3px;}
+.hitter-bar{height:100%;border-radius:3px;}
+.hitter-pct{font-family:'Bebas Neue',sans-serif;font-size:.92rem;width:44px;text-align:right;}
+.hitter-n{font-size:.63rem;color:var(--muted);width:32px;text-align:right;}
+.result-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:260px;color:var(--muted);border:2px dashed var(--border);border-radius:14px;}
+.result-empty .e-icon{font-size:2rem;margin-bottom:.6rem;opacity:.4;}
+.result-empty p{font-size:.82rem;}
+
+/* ══ TAB 3 — COMBO BUILDER ══ */
+.combo-selectors{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem;}
+.sel-block label{display:block;font-size:.67rem;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:.42rem;}
+.sel-block select{width:100%;background:var(--surface2);border:1px solid var(--border);
+  color:var(--text);font-family:'DM Sans',sans-serif;font-size:.84rem;padding:.58rem .82rem;
+  border-radius:8px;cursor:pointer;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a90b0' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right .82rem center;transition:border-color .15s;}
+.sel-block select:focus{outline:none;border-color:var(--gold);}
+.combo-result{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;}
+.result-hero{background:linear-gradient(135deg,var(--navy2),#004080);border-radius:14px;
+  padding:1.75rem;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;min-height:210px;border:1px solid rgba(198,146,20,.2);}
+.big-pct{font-family:'Bebas Neue',sans-serif;font-size:4.8rem;line-height:1;color:var(--gold);}
+.big-label{font-size:.76rem;color:var(--muted);margin-top:.32rem;}
+.big-sub{font-size:.8rem;color:var(--text);margin-top:.6rem;font-weight:500;}
+.rot-table{width:100%;border-collapse:collapse;}
+.rot-table th{font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--muted);padding:.48rem .7rem;text-align:left;border-bottom:1px solid var(--border);}
+.rot-table td{padding:.48rem .7rem;font-size:.82rem;border-bottom:1px solid rgba(255,255,255,.04);}
+.rot-table tr:last-child td{border-bottom:none;}
+.rot-table tr:hover td{background:rgba(255,255,255,.03);}
+
+/* ══ TAB 4 — SETTER COMPARISON ══ */
+.setter-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem;}
+.setter-hero{background:var(--surface2);border-radius:12px;padding:1rem;margin-bottom:.85rem;
+  display:flex;align-items:center;gap:.85rem;}
+.setter-init{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-family:'Bebas Neue',sans-serif;font-size:.95rem;flex-shrink:0;}
+.setter-name{font-family:'Bebas Neue',sans-serif;font-size:1.12rem;letter-spacing:.04em;}
+.setter-rate{font-size:.74rem;color:var(--muted);margin-top:.08rem;}
+.rot-vs{display:flex;flex-direction:column;gap:.48rem;}
+.rv-row{display:flex;align-items:center;gap:.58rem;}
+.rv-lbl{font-size:.7rem;font-weight:600;color:var(--muted);width:50px;flex-shrink:0;}
+.rv-track{flex:1;height:22px;background:rgba(255,255,255,.05);border-radius:6px;overflow:hidden;}
+.rv-fill{height:100%;border-radius:6px;display:flex;align-items:center;padding-left:8px;
+  font-size:.7rem;font-weight:700;color:#fff;transition:width .5s;}
+.rv-n{font-size:.65rem;color:var(--muted);width:36px;text-align:right;flex-shrink:0;}
+.h2h-section{margin-top:1.5rem;}
+.h2h-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border-radius:10px;overflow:hidden;}
+.h2h-cell{background:var(--surface2);padding:.85rem 1rem;}
+.h2h-player{font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.25rem;}
+.h2h-val{font-family:'Bebas Neue',sans-serif;font-size:1.7rem;}
+.h2h-sub{font-size:.7rem;color:var(--muted);margin-top:.12rem;}
+
+/* ══ TAB 5 — LEADERBOARD ══ */
+.lb-filters{display:flex;gap:.5rem;margin-bottom:1.2rem;flex-wrap:wrap;}
+.filter-btn{background:var(--surface2);border:1px solid var(--border);color:var(--muted);
+  font-family:'DM Sans',sans-serif;font-size:.73rem;font-weight:600;padding:.38rem .85rem;
+  border-radius:20px;cursor:pointer;transition:all .15s;}
+.filter-btn:hover{color:var(--text);border-color:rgba(255,255,255,.2);}
+.filter-btn.active{background:var(--gold);border-color:var(--gold);color:var(--navy);}
+.lb-table{width:100%;border-collapse:collapse;}
+.lb-table th{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);
+  padding:.58rem .88rem;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+.lb-table td{padding:.62rem .88rem;font-size:.83rem;border-bottom:1px solid rgba(255,255,255,.04);}
+.lb-table tr:last-child td{border-bottom:none;}
+.lb-table tr:hover td{background:rgba(255,255,255,.03);cursor:pointer;}
+.td-rank{font-family:'Bebas Neue',sans-serif;font-size:.95rem;color:var(--muted);}
+.td-rank.gold{color:var(--gold);}
+.td-name{font-weight:600;}
+.td-pct{font-family:'Bebas Neue',sans-serif;font-size:1rem;}
+.td-bar-wrap{width:100px;height:5px;background:rgba(255,255,255,.08);border-radius:3px;display:inline-block;}
+.td-bar-fill{height:100%;border-radius:3px;}
+
+@media(max-width:1000px){.columns{grid-template-columns:1fr 1fr;}}
+@media(max-width:700px){
+  .columns{grid-template-columns:1fr;}
+  .col{border-right:none;border-bottom:1px solid var(--border);}
+  .score-pct{font-size:3rem;}
+  .score-bar{flex-wrap:wrap;gap:.75rem;}
+  #tab-players .grid-2{grid-template-columns:1fr;}
+  .combo-selectors{grid-template-columns:1fr;}
+  .combo-result{grid-template-columns:1fr;}
+  .setter-grid{grid-template-columns:1fr;}
 }
 </style>
 </head>
-
 <body>
 
-<header>
-  <div class="brand">UCSD WVB <span>LINEUP BUILDER</span></div>
-  <div class="avg-chip">Team avg: <strong id="teamAvg">—</strong></div>
-</header>
-
-<div class="score-bar" id="scoreBar">
-  <div class="score-context" id="ctxLeft">
-    <div class="ctx-chip rotation-chip plain" id="ctxRotation">Rotation: —</div>
-    <div class="ctx-chip passer-chip plain" id="ctxPasser">Passer: —</div>
+<nav>
+  <div class="nav-brand">UCSD <span>WVB</span></div>
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="showTab('builder',this)">Lineup Builder</button>
+    <button class="tab-btn" onclick="showTab('players',this)">Player Explorer</button>
+    <button class="tab-btn" onclick="showTab('combo',this)">Combo Stats</button>
+    <button class="tab-btn" onclick="showTab('setters',this)">Setter Comparison</button>
+    <button class="tab-btn" onclick="showTab('leaderboard',this)">Leaderboard</button>
   </div>
+  <div class="nav-badge">Team avg: 57.8%</div>
+</nav>
 
-  <div class="score-main">
-    <div class="score-pct" id="scorePct">—</div>
-    <div class="score-label">Expected Side-Out %</div>
-    <div class="score-meta" id="scoreMeta">Loading CSV data...</div>
-    <div class="vs-avg" id="vsAvg"></div>
+<!-- ══ TAB 1: LINEUP BUILDER (Hannah) ══ -->
+<div id="tab-builder" class="panel active" style="padding:0;max-width:none;">
+  <div class="score-bar" id="scoreBar">
+    <div class="score-context" id="ctxLeft">
+      <div class="ctx-chip rotation-chip plain" id="ctxRotation">Rotation: —</div>
+      <div class="ctx-chip passer-chip plain" id="ctxPasser">Passer: —</div>
+    </div>
+    <div class="score-main">
+      <div class="score-pct" id="scorePct">—</div>
+      <div class="score-label">Expected Side-Out %</div>
+      <div class="score-meta" id="scoreMeta">Select players below to see their expected side-out %</div>
+      <div class="vs-avg" id="vsAvg"></div>
+    </div>
+    <div class="score-context" id="ctxRight">
+      <div class="ctx-chip setter-chip plain" id="ctxSetter">Setter: —</div>
+      <div class="ctx-chip hitter-chip plain" id="ctxHitter">Hitter: —</div>
+      <div class="ctx-chip rec-chip plain" id="ctxRec">Receptions: —</div>
+    </div>
+    <button class="clear-btn" onclick="clearAll()">✕ Reset</button>
   </div>
-
-  <div class="score-context" id="ctxRight">
-    <div class="ctx-chip setter-chip plain" id="ctxSetter">Setter: —</div>
-    <div class="ctx-chip hitter-chip plain" id="ctxHitter">Hitter: —</div>
-    <div class="ctx-chip rec-chip plain" id="ctxRec">Receptions: —</div>
+  <div class="columns">
+    <div class="col">
+      <div class="col-header">
+        <button class="col-clear rotation" onclick="clearRotation()">×</button>
+        <div><div class="col-title rotation">Rotation</div></div>
+        <div class="col-sub">Optional</div>
+      </div>
+      <div class="player-list" id="rotationList"></div>
+    </div>
+    <div class="col">
+      <div class="col-header">
+        <button class="col-clear passer" onclick="clearPasser()">×</button>
+        <div><div class="col-title passer">Passer</div></div>
+        <div class="col-sub">Rotation-aware</div>
+      </div>
+      <div class="player-list" id="passerList"></div>
+    </div>
+    <div class="col">
+      <div class="col-header">
+        <button class="col-clear setter" onclick="clearSetter()">×</button>
+        <div><div class="col-title setter">Setter</div></div>
+        <div class="col-sub">Optional</div>
+      </div>
+      <div class="player-list" id="setterList"></div>
+    </div>
+    <div class="col">
+      <div class="col-header">
+        <button class="col-clear hitter" onclick="clearHitter()">×</button>
+        <div><div class="col-title hitter">Hitter</div></div>
+        <div class="col-sub">Requires passer + setter</div>
+      </div>
+      <div class="hitter-note visible" id="hitterNote">Select a passer &amp; setter first to see available hitter combinations</div>
+      <div class="player-list" id="hitterList"></div>
+    </div>
   </div>
-
-  <button class="clear-btn" onclick="clearAll()">✕ Reset</button>
 </div>
 
-<div class="columns">
-
-  <div class="col">
-    <div class="col-header">
-      <button class="col-clear rotation" onclick="clearRotation()" title="Clear rotation">×</button>
-      <div><div class="col-title rotation">Rotation</div></div>
-      <div class="col-sub">Optional</div>
+<!-- ══ TAB 2: PLAYER EXPLORER ══ -->
+<div id="tab-players" class="panel">
+  <div class="grid-2">
+    <div>
+      <div class="slabel">Select a player</div>
+      <div class="p-list" id="playerList"></div>
     </div>
-    <div class="player-list" id="rotationList"></div>
+    <div class="detail-sticky">
+      <div class="card" id="detailCard">
+        <div class="result-empty" style="min-height:300px;margin:1rem;">
+          <div class="e-icon">🏐</div>
+          <p>Select a player to see their breakdown</p>
+        </div>
+      </div>
+    </div>
   </div>
+</div>
 
-  <div class="col">
-    <div class="col-header">
-      <button class="col-clear passer" onclick="clearPasser()" title="Clear passer">×</button>
-      <div><div class="col-title passer">Passer</div></div>
-      <div class="col-sub">Rotation-aware</div>
+<!-- ══ TAB 3: COMBO STATS ══ -->
+<div id="tab-combo" class="panel">
+  <div class="slabel">Build a lineup combination to see expected side-out %</div>
+  <div class="combo-selectors">
+    <div class="sel-block">
+      <label>Passer</label>
+      <select id="selPasser2" onchange="updateCombo()"><option value="">— Select passer —</option></select>
     </div>
-    <div class="player-list" id="passerList"></div>
+    <div class="sel-block">
+      <label>Setter</label>
+      <select id="selSetter2" onchange="updateCombo()"><option value="">— Select setter —</option></select>
+    </div>
+    <div class="sel-block">
+      <label>Hitter <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+      <select id="selHitter2" onchange="updateCombo()"><option value="">— Any hitter —</option></select>
+    </div>
   </div>
-
-  <div class="col">
-    <div class="col-header">
-      <button class="col-clear setter" onclick="clearSetter()" title="Clear setter">×</button>
-      <div><div class="col-title setter">Setter</div></div>
-      <div class="col-sub">Optional</div>
+  <div class="combo-result">
+    <div>
+      <div id="comboHero" class="result-empty">
+        <div class="e-icon">📊</div><p>Select passer + setter to see result</p>
+      </div>
     </div>
-    <div class="player-list" id="setterList"></div>
+    <div>
+      <div class="card">
+        <div class="card-head"><h3>By Rotation</h3><p id="comboRotLabel">—</p></div>
+        <div class="card-body"><div id="comboRotBody" style="color:var(--muted);font-size:.83rem;padding:.5rem 0;text-align:center">Select a combination first</div></div>
+      </div>
+      <div class="card" style="margin-top:1rem;">
+        <div class="card-head"><h3>Best Hitters with this Setter</h3><p id="comboHitterLabel">—</p></div>
+        <div class="card-body"><div class="hitter-rows" id="comboHitterBody" style="color:var(--muted);font-size:.83rem;padding:.5rem 0;text-align:center">Select a setter first</div></div>
+      </div>
+    </div>
   </div>
+</div>
 
-  <div class="col">
-    <div class="col-header">
-      <button class="col-clear hitter" onclick="clearHitter()" title="Clear hitter">×</button>
-      <div><div class="col-title hitter">Hitter</div></div>
-      <div class="col-sub">Requires passer + setter</div>
-    </div>
-
-    <div class="hitter-note visible" id="hitterNote">
-      Select a passer &amp; setter first to see<br>available hitter combinations
-    </div>
-
-    <div class="player-list" id="hitterList"></div>
+<!-- ══ TAB 4: SETTER COMPARISON ══ -->
+<div id="tab-setters" class="panel">
+  <div class="setter-grid" id="setterGrid"></div>
+  <div class="h2h-section">
+    <div class="slabel">Head to Head</div>
+    <div class="h2h-grid" id="h2hGrid"></div>
   </div>
+</div>
 
+<!-- ══ TAB 5: LEADERBOARD ══ -->
+<div id="tab-leaderboard" class="panel">
+  <div class="lb-filters">
+    <button class="filter-btn active" onclick="setLbView('passers',this)">Passers</button>
+    <button class="filter-btn" onclick="setLbView('passer-setter',this)">Passer + Setter Combos</button>
+    <button class="filter-btn" onclick="setLbView('setter-hitter',this)">Setter + Hitter Combos</button>
+  </div>
+  <div class="card"><div style="overflow-x:auto;"><table class="lb-table" id="lbTable"></table></div></div>
 </div>
 
 <script>
-const FILES = {
-  passerSetter: "data/passer_setter_xso.csv",
-  passerGivenRotation: "data/passer_given_rotation_expected_sideout.csv",
-  setter: "data/setter_xso.csv",
-  setterHitter: "data/setter_hitter_xso.csv",
-  passerSetterHitter: "data/passer_setter_hitter_xso_all_combinations.csv",
+// ══════════════════════════════════════
+// EMBEDDED DATA (no CSV files needed)
+// ══════════════════════════════════════
+const TEAM_AVG_PCT = 57.8;
 
-  hitterGivenRotation: "data/hitter_given_rotation_expected_sideout.csv",
-  setterGivenRotation: "data/setter_given_rotation_expected_sideout.csv",
-  setterHitterGivenRotation: "data/setter_hitter_given_rotation_expected_sideout.csv",
-  hitterPasserGivenRotation: "data/hitter_passer_given_rotation_expected_sideout.csv",
-  passerSetterGivenRotation: "data/passer_setter_given_rotation_expected_sideout.csv",
-
-  rotationSetterHitter: "data/rotation_setter_hitter_xso.csv",
-  rotationPasserSetterHitter: "data/rotation_passer_setter_hitter_xso.csv"
-};
-
-const TRUE_SETTERS = ["Maija Nepszy", "Mika Rome"];
-
-const ALL_UCSD_PLAYERS = [
-  "Alba Canko",
-  "Ireland McNees",
-  "Iris Canko",
-  "Jasmin Saran",
-  "Katelyn Hernandez",
-  "Katie Rapp",
-  "Kayla Uhlick",
-  "Lucia Barroso",
-  "Madison Johnson",
-  "Maija Nepszy",
-  "Maria Fernanda Afonso",
-  "Marleena Catalan",
-  "Mika Rome",
-  "Mina Olgar",
-  "Molly McCluskey",
-  "Paulina Baillie",
-  "Stefania Alupei",
-  "Zahara Quraishi"
+const PLAYERS = [
+  {name:"Maija Nepszy",receptions:670,xso:56.87,by_rotation:[{r:1,pct:52.59,n:135},{r:2,pct:64.21,n:95},{r:3,pct:60.0,n:95},{r:4,pct:58.68,n:121},{r:5,pct:53.91,n:115},{r:6,pct:54.13,n:109}],by_pq:{Negative:{pct:57.03,n:128},OK:{pct:56.57,n:99},Perfect:{pct:50.0,n:56},Positive:{pct:57.88,n:387}}},
+  {name:"Ireland McNees",receptions:630,xso:50.63,by_rotation:[{r:1,pct:44.0,n:100},{r:2,pct:56.7,n:97},{r:3,pct:59.42,n:69},{r:4,pct:47.73,n:132},{r:5,pct:47.2,n:125},{r:6,pct:53.27,n:107}],by_pq:{Error:{pct:0.0,n:30},Negative:{pct:42.64,n:197},OK:{pct:63.92,n:97},Perfect:{pct:54.35,n:46},Poor:{pct:50.0,n:18},Positive:{pct:57.44,n:242}}},
+  {name:"Mika Rome",receptions:543,xso:58.2,by_rotation:[{r:1,pct:49.23,n:65},{r:2,pct:56.7,n:97},{r:3,pct:71.79,n:78},{r:4,pct:53.51,n:114},{r:5,pct:51.75,n:114},{r:6,pct:70.67,n:75}],by_pq:{Negative:{pct:42.62,n:122},OK:{pct:64.15,n:106},Perfect:{pct:68.12,n:69},Positive:{pct:60.57,n:246}}},
+  {name:"Maria Fernanda Afonso",receptions:461,xso:60.3,by_rotation:[{r:1,pct:59.43,n:106},{r:2,pct:51.46,n:103},{r:3,pct:71.23,n:73},{r:4,pct:56.72,n:67},{r:5,pct:61.82,n:55},{r:6,pct:66.67,n:57}],by_pq:{Error:{pct:0.0,n:9},Negative:{pct:55.68,n:185},OK:{pct:73.13,n:67},Perfect:{pct:82.61,n:23},Poor:{pct:31.25,n:16},Positive:{pct:63.35,n:161}}},
+  {name:"Paulina Baillie",receptions:412,xso:50.0,by_rotation:[{r:1,pct:53.57,n:56},{r:2,pct:48.15,n:27},{r:3,pct:52.63,n:76},{r:4,pct:46.75,n:77},{r:5,pct:42.65,n:68},{r:6,pct:53.7,n:108}],by_pq:{Error:{pct:0.0,n:15},Negative:{pct:50.0,n:132},OK:{pct:53.73,n:67},Perfect:{pct:64.29,n:28},Poor:{pct:30.77,n:13},Positive:{pct:52.23,n:157}}},
+  {name:"Kayla Uhlick",receptions:339,xso:51.03,by_rotation:[{r:1,pct:50.0,n:54},{r:2,pct:55.22,n:67},{r:3,pct:48.84,n:43},{r:4,pct:53.45,n:58},{r:5,pct:44.93,n:69},{r:6,pct:54.17,n:48}],by_pq:{Error:{pct:0.0,n:23},Negative:{pct:60.2,n:98},OK:{pct:57.5,n:40},Perfect:{pct:50.0,n:22},Poor:{pct:0.0,n:12},Positive:{pct:55.56,n:144}}},
+  {name:"Molly McCluskey",receptions:334,xso:59.88,by_rotation:[{r:1,pct:57.69,n:78},{r:2,pct:52.94,n:34},{r:3,pct:64.29,n:28},{r:4,pct:62.96,n:27},{r:5,pct:60.0,n:80},{r:6,pct:62.07,n:87}],by_pq:{Negative:{pct:54.35,n:92},OK:{pct:48.78,n:41},Perfect:{pct:80.0,n:20},Positive:{pct:63.69,n:179}}},
+  {name:"Jasmine Saran",receptions:192,xso:60.42,by_rotation:[{r:3,pct:65.57,n:61},{r:4,pct:61.82,n:55},{r:5,pct:52.78,n:72}],by_pq:{Negative:{pct:52.94,n:17},OK:{pct:68.0,n:25},Perfect:{pct:52.0,n:25},Positive:{pct:61.6,n:125}}},
+  {name:"Stefania Alupei",receptions:124,xso:50.0,by_rotation:[{r:1,pct:48.15,n:27},{r:2,pct:72.73,n:22},{r:3,pct:62.5,n:24},{r:4,pct:30.77,n:13},{r:5,pct:34.62,n:26},{r:6,pct:41.67,n:12}],by_pq:{Error:{pct:0.0,n:6},Negative:{pct:43.75,n:48},OK:{pct:64.29,n:14},Perfect:{pct:22.22,n:9},Poor:{pct:0.0,n:3},Positive:{pct:68.18,n:44}}},
+  {name:"Madison Johnson",receptions:101,xso:48.51,by_rotation:[{r:1,pct:45.95,n:37},{r:2,pct:63.33,n:30},{r:5,pct:60.0,n:5},{r:6,pct:34.48,n:29}],by_pq:{Negative:{pct:42.86,n:7},OK:{pct:30.77,n:13},Perfect:{pct:33.33,n:12},Positive:{pct:55.07,n:69}}},
+  {name:"Iris Canko",receptions:70,xso:51.43,by_rotation:[{r:1,pct:100.0,n:6},{r:2,pct:40.74,n:27},{r:3,pct:46.15,n:13},{r:4,pct:55.56,n:9},{r:5,pct:50.0,n:10},{r:6,pct:60.0,n:5}],by_pq:{Error:{pct:0.0,n:8},Negative:{pct:21.05,n:19},OK:{pct:75.0,n:4},Perfect:{pct:100.0,n:10},Positive:{pct:66.67,n:27}}},
+  {name:"Mina Olgar",receptions:48,xso:64.58,by_rotation:[{r:1,pct:70.0,n:10},{r:2,pct:11.11,n:9},{r:4,pct:75.0,n:12},{r:5,pct:100.0,n:7},{r:6,pct:83.33,n:6}],by_pq:{OK:{pct:71.43,n:14},Perfect:{pct:71.43,n:7},Positive:{pct:60.0,n:25}}},
 ];
 
-const PLAYER_IMAGE_FILES = {
-  "Alba Canko": "alba-canko.jpg",
-  "Ireland McNees": "ireland-mcnees.jpg",
-  "Iris Canko": "iris-canko.jpg",
-  "Jasmin Saran": "jasmin-saran.jpg",
-  "Jasmine Saran": "jasmin-saran.jpg",
-  "Katelyn Hernandez": "katelyn-hernandez.jpg",
-  "Katie Rapp": "katie-rapp.jpg",
-  "Kayla Uhlick": "kayla-uhlick.jpg",
-  "Lucia Barroso": "lucia-barroso.jpg",
-  "Madison Johnson": "madison-johnson.jpg",
-  "Maija Nepszy": "maija-nepszy.jpg",
-  "Maria Fernanda Afonso": "maria-fernanda-afonso.jpg",
-  "Marleena Catalan": "marleena-catalan.jpg",
-  "Mika Rome": "mika-rome.jpg",
-  "Mina Olgar": "mina-olgar.jpg",
-  "Molly McCluskey": "molly-mccluskey.jpg",
-  "Paulina Baillie": "paulina-baillie.jpg",
-  "Stefania Alupei": "stefania-alupei.jpg",
-  "Zahara Quraishi": "zahara-quraishi.jpg"
+const PASSER_SETTER = [
+  {passer:"Molly McCluskey",setter:"Maija Nepszy",n:8,s:7,xso:87.5},
+  {passer:"Mina Olgar",setter:"Mika Rome",n:6,s:5,xso:83.3},
+  {passer:"Katie Rapp",setter:"Maija Nepszy",n:8,s:6,xso:75.0},
+  {passer:"Maria Fernanda Afonso",setter:"Maija Nepszy",n:78,s:51,xso:65.4},
+  {passer:"Kayla Uhlick",setter:"Mika Rome",n:124,s:78,xso:62.9},
+  {passer:"Iris Canko",setter:"Maija Nepszy",n:8,s:5,xso:62.5},
+  {passer:"Ireland McNees",setter:"Mika Rome",n:147,s:89,xso:60.5},
+  {passer:"Ireland McNees",setter:"Maija Nepszy",n:129,s:78,xso:60.5},
+  {passer:"Kayla Uhlick",setter:"Maija Nepszy",n:129,s:76,xso:58.9},
+  {passer:"Iris Canko",setter:"Mika Rome",n:52,s:29,xso:55.8},
+  {passer:"Molly McCluskey",setter:"Mika Rome",n:9,s:5,xso:55.6},
+  {passer:"Paulina Baillie",setter:"Mika Rome",n:141,s:75,xso:53.2},
+  {passer:"Stefania Alupei",setter:"Maija Nepszy",n:55,s:29,xso:52.7},
+  {passer:"Paulina Baillie",setter:"Maija Nepszy",n:151,s:79,xso:52.3},
+  {passer:"Madison Johnson",setter:"Mika Rome",n:6,s:3,xso:50.0},
+  {passer:"Maria Fernanda Afonso",setter:"Mika Rome",n:90,s:44,xso:48.9},
+];
+
+const PASSER_SETTER_ROTATION = [
+  {r:5,passer:"Maria Fernanda Afonso",setter:"Maija Nepszy",n:8,s:7,xso:87.5},
+  {r:2,passer:"Iris Canko",setter:"Mika Rome",n:7,s:6,xso:85.7},
+  {r:4,passer:"Mina Olgar",setter:"Mika Rome",n:6,s:5,xso:83.3},
+  {r:6,passer:"Kayla Uhlick",setter:"Maija Nepszy",n:23,s:19,xso:82.6},
+  {r:2,passer:"Kayla Uhlick",setter:"Mika Rome",n:22,s:17,xso:77.3},
+  {r:3,passer:"Ireland McNees",setter:"Maija Nepszy",n:20,s:14,xso:70.0},
+  {r:1,passer:"Maria Fernanda Afonso",setter:"Maija Nepszy",n:30,s:20,xso:66.7},
+  {r:6,passer:"Ireland McNees",setter:"Mika Rome",n:28,s:18,xso:64.3},
+  {r:5,passer:"Kayla Uhlick",setter:"Mika Rome",n:30,s:19,xso:63.3},
+  {r:1,passer:"Ireland McNees",setter:"Mika Rome",n:35,s:21,xso:60.0},
+  {r:4,passer:"Paulina Baillie",setter:"Mika Rome",n:24,s:14,xso:58.3},
+  {r:3,passer:"Paulina Baillie",setter:"Maija Nepszy",n:24,s:14,xso:58.3},
+];
+
+const SETTER_HITTER = [
+  {setter:"Mika Rome",hitter:"Mina Olgar",n:33,s:26,xso:78.8},
+  {setter:"Mika Rome",hitter:"Mika Rome",n:23,s:18,xso:78.3},
+  {setter:"Maija Nepszy",hitter:"Maija Nepszy",n:14,s:10,xso:71.4},
+  {setter:"Maija Nepszy",hitter:"Stefania Alupei",n:40,s:28,xso:70.0},
+  {setter:"Mika Rome",hitter:"Madison Johnson",n:48,s:31,xso:64.6},
+  {setter:"Maija Nepszy",hitter:"Molly McCluskey",n:139,s:88,xso:63.3},
+  {setter:"Maija Nepszy",hitter:"Jasmine Saran",n:120,s:76,xso:63.3},
+  {setter:"Maija Nepszy",hitter:"Lucia Barroso",n:8,s:5,xso:62.5},
+  {setter:"Maija Nepszy",hitter:"Maria Fernanda Afonso",n:86,s:52,xso:60.5},
+  {setter:"Mika Rome",hitter:"Maria Fernanda Afonso",n:130,s:75,xso:57.7},
+  {setter:"Mika Rome",hitter:"Molly McCluskey",n:140,s:80,xso:57.1},
+  {setter:"Mika Rome",hitter:"Jasmine Saran",n:56,s:32,xso:57.1},
+  {setter:"Maija Nepszy",hitter:"Katie Rapp",n:28,s:15,xso:53.6},
+  {setter:"Maija Nepszy",hitter:"Madison Johnson",n:28,s:15,xso:53.6},
+  {setter:"Maija Nepszy",hitter:"Ireland McNees",n:77,s:39,xso:50.6},
+  {setter:"Mika Rome",hitter:"Ireland McNees",n:130,s:65,xso:50.0},
+  {setter:"Maija Nepszy",hitter:"Mina Olgar",n:12,s:6,xso:50.0},
+];
+
+const SETTER_ROTATION = [
+  {r:6,setter:"Maija Nepszy",n:101,s:69,xso:68.3},
+  {r:5,setter:"Maija Nepszy",n:96,s:63,xso:65.6},
+  {r:2,setter:"Mika Rome",n:87,s:56,xso:64.4},
+  {r:6,setter:"Mika Rome",n:91,s:58,xso:63.7},
+  {r:2,setter:"Maija Nepszy",n:84,s:49,xso:58.3},
+  {r:5,setter:"Mika Rome",n:110,s:63,xso:57.3},
+  {r:3,setter:"Maija Nepszy",n:82,s:46,xso:56.1},
+  {r:1,setter:"Mika Rome",n:69,s:37,xso:53.6},
+  {r:4,setter:"Mika Rome",n:120,s:64,xso:53.3},
+  {r:4,setter:"Maija Nepszy",n:92,s:48,xso:52.2},
+  {r:1,setter:"Maija Nepszy",n:114,s:59,xso:51.8},
+  {r:3,setter:"Mika Rome",n:105,s:54,xso:51.4},
+];
+
+const SETTER_XSO=[{setter:"Maija Nepszy",n:569,s:334,xso:58.7},{setter:"Mika Rome",n:582,s:332,xso:57.0}];
+
+const PSH=[
+  {passer:"Ireland McNees",setter:"Mika Rome",hitter:"Mina Olgar",n:17,s:17,xso:100.0},
+  {passer:"Ireland McNees",setter:"Mika Rome",hitter:"Madison Johnson",n:13,s:11,xso:84.6},
+  {passer:"Ireland McNees",setter:"Maija Nepszy",hitter:"Stefania Alupei",n:12,s:10,xso:83.3},
+  {passer:"Ireland McNees",setter:"Maija Nepszy",hitter:"Maija Nepszy",n:6,s:5,xso:83.3},
+  {passer:"Kayla Uhlick",setter:"Mika Rome",hitter:"Mika Rome",n:6,s:5,xso:83.3},
+  {passer:"Ireland McNees",setter:"Maija Nepszy",hitter:"Jasmine Saran",n:28,s:23,xso:82.1},
+  {passer:"Kayla Uhlick",setter:"Mika Rome",hitter:"Molly McCluskey",n:27,s:21,xso:77.8},
+  {passer:"Paulina Baillie",setter:"Maija Nepszy",hitter:"Molly McCluskey",n:32,s:24,xso:75.0},
+  {passer:"Ireland McNees",setter:"Maija Nepszy",hitter:"Ireland McNees",n:14,s:10,xso:71.4},
+  {passer:"Maria Fernanda Afonso",setter:"Maija Nepszy",hitter:"Molly McCluskey",n:17,s:12,xso:70.6},
+  {passer:"Kayla Uhlick",setter:"Maija Nepszy",hitter:"Maria Fernanda Afonso",n:13,s:9,xso:69.2},
+  {passer:"Kayla Uhlick",setter:"Maija Nepszy",hitter:"Jasmine Saran",n:29,s:20,xso:69.0},
+  {passer:"Paulina Baillie",setter:"Mika Rome",hitter:"Jasmine Saran",n:15,s:10,xso:66.7},
+  {passer:"Kayla Uhlick",setter:"Maija Nepszy",hitter:"Molly McCluskey",n:38,s:25,xso:65.8},
+  {passer:"Paulina Baillie",setter:"Mika Rome",hitter:"Molly McCluskey",n:39,s:25,xso:64.1},
+  {passer:"Maria Fernanda Afonso",setter:"Maija Nepszy",hitter:"Maria Fernanda Afonso",n:33,s:21,xso:63.6},
+  {passer:"Ireland McNees",setter:"Mika Rome",hitter:"Maria Fernanda Afonso",n:38,s:24,xso:63.2},
+  {passer:"Kayla Uhlick",setter:"Mika Rome",hitter:"Ireland McNees",n:54,s:34,xso:63.0},
+  {passer:"Ireland McNees",setter:"Mika Rome",hitter:"Molly McCluskey",n:42,s:22,xso:52.4},
+  {passer:"Paulina Baillie",setter:"Maija Nepszy",hitter:"Jasmine Saran",n:35,s:17,xso:48.6},
+  {passer:"Paulina Baillie",setter:"Maija Nepszy",hitter:"Ireland McNees",n:26,s:12,xso:46.2},
+  {passer:"Ireland McNees",setter:"Maija Nepszy",hitter:"Molly McCluskey",n:35,s:16,xso:45.7},
+  {passer:"Kayla Uhlick",setter:"Maija Nepszy",hitter:"Ireland McNees",n:32,s:14,xso:43.8},
+  {passer:"Paulina Baillie",setter:"Mika Rome",hitter:"Ireland McNees",n:47,s:19,xso:40.4},
+];
+
+// Hannah's lineup builder data (embedded so no CSV fetch needed)
+const D = {
+  passerSetter: PASSER_SETTER.map(r=>({passer:r.passer,setter_group:r.setter,receptions:r.n,sideouts:r.s,expected_sideout_pct:r.xso})),
+  setter: SETTER_XSO.map(r=>({setter_group:r.setter,receptions:r.n,sideouts:r.s,expected_sideout_pct:r.xso})),
+  setterHitter: SETTER_HITTER.map(r=>({setter_group:r.setter,hitter:r.hitter,receptions:r.n,sideouts:r.s,expected_sideout_pct:r.xso})),
+  passerSetterHitter: PSH.map(r=>({passer:r.passer,setter_group:r.setter,hitter:r.hitter,receptions:r.n,sideouts:r.s,expected_sideout_pct:r.xso})),
+  setterGivenRotation: SETTER_ROTATION.map(r=>({rotation:r.r,setter_group:r.setter,receptions:r.n,sideouts:r.s,expected_sideout_pct:r.xso})),
+  passerSetterGivenRotation: PASSER_SETTER_ROTATION.map(r=>({rotation:r.r,passer:r.passer,setter_group:r.setter,receptions:r.n,sideouts:r.s,expected_sideout_pct:r.xso})),
+  rotationPasserSetterHitter: [],
+  hitterGivenRotation: [],
+  setterHitterGivenRotation: [],
+  hitterPasserGivenRotation: [],
+  rotationSetterHitter: SETTER_ROTATION.map(r=>({rotation:r.r,setter_group:r.setter,receptions:r.n,sideouts:r.s,expected_sideout_pct:r.xso})),
+  passerGivenRotation: PASSER_SETTER_ROTATION.map(r=>({rotation:r.r,passer:r.passer,receptions:r.n,sideouts:r.s,expected_sideout_pct:r.xso})),
 };
 
-let DATA = {};
-let TEAM_AVG = 0;
+const TRUE_SETTERS=["Maija Nepszy","Mika Rome"];
+const ALL_UCSD_PLAYERS=["Ireland McNees","Iris Canko","Jasmine Saran","Katie Rapp","Kayla Uhlick","Lucia Barroso","Madison Johnson","Maija Nepszy","Maria Fernanda Afonso","Mika Rome","Mina Olgar","Molly McCluskey","Paulina Baillie","Stefania Alupei"];
 
-let selRotation = null;
-let selPasser = null;
-let selSetter = null;
-let selHitter = null;
+let selRotation=null,selPasser=null,selSetter=null,selHitter=null;
 
-async function loadCSV(path) {
-  const res = await fetch(path);
+// ══ HELPERS ══
+function ini(n){return String(n).split(' ').map(w=>w[0]).slice(0,2).join('');}
+function toN(x){const v=Number(x);return Number.isFinite(v)?v:0;}
+function getXSO(r){if(!r)return 0;return toN(r.expected_sideout_pct??r.xso??0);}
+function getN(r){if(!r)return 0;return toN(r.receptions??r.n??0);}
+function getSO(r){if(!r)return 0;return toN(r.sideouts??r.s??0);}
+function agg(rows){let n=0,s=0;rows.forEach(r=>{n+=getN(r);s+=getSO(r);});return n?{n,sideouts:s,xso:s/n*100}:null;}
+function rateHex(v){if(v>=70)return'#22c55e';if(v>=60)return'#4ade80';if(v>=55)return'#00629B';if(v>=48)return'#f59e0b';return'#ef4444';}
+function rateColor(v){if(v>=70)return'rate-hot';if(v>=58)return'rate-warm';if(v>=50)return'rate-mid';return'rate-cool';}
+function pilCls(v){return v>=58?'pill-green':v>=52?'pill-amber':'pill-red';}
+const PQ_ORDER=['Perfect','Positive','OK','Negative','Poor','Error'];
+const PQ_COLORS={Perfect:'#16a34a',Positive:'#22c55e',OK:'#ca8a04',Negative:'#ea580c',Poor:'#dc2626',Error:'#7f1d1d'};
+const SETTER_COLORS={'Maija Nepszy':'#C69214','Mika Rome':'#00629B'};
 
-  if (!res.ok) {
-    throw new Error("Could not load " + path);
-  }
-
-  const text = await res.text();
-
-  return Papa.parse(text, {
-    header: true,
-    dynamicTyping: true,
-    skipEmptyLines: true
-  }).data;
+// ══ TAB SWITCHING ══
+function showTab(id,btn){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  if(btn)btn.classList.add('active');
 }
 
-async function init() {
-  try {
-    DATA.passerSetter = await loadCSV(FILES.passerSetter);
-    DATA.passerGivenRotation = await loadCSV(FILES.passerGivenRotation);
-    DATA.setter = await loadCSV(FILES.setter);
-    DATA.setterHitter = await loadCSV(FILES.setterHitter);
-    DATA.passerSetterHitter = await loadCSV(FILES.passerSetterHitter);
-
-    DATA.hitterGivenRotation = await loadCSV(FILES.hitterGivenRotation);
-    DATA.setterGivenRotation = await loadCSV(FILES.setterGivenRotation);
-    DATA.setterHitterGivenRotation = await loadCSV(FILES.setterHitterGivenRotation);
-    DATA.hitterPasserGivenRotation = await loadCSV(FILES.hitterPasserGivenRotation);
-    DATA.passerSetterGivenRotation = await loadCSV(FILES.passerSetterGivenRotation);
-
-    DATA.rotationSetterHitter = await loadCSV(FILES.rotationSetterHitter);
-    DATA.rotationPasserSetterHitter = await loadCSV(FILES.rotationPasserSetterHitter);
-
-    TEAM_AVG = getOverallAverage();
-    document.getElementById("teamAvg").textContent = TEAM_AVG.toFixed(1) + "%";
-
-    buildRotations();
-    buildPassers();
-    buildSetters();
-    buildHitters();
-
-    refreshAll();
-  } catch (err) {
-    console.error(err);
-    document.getElementById("scoreMeta").innerHTML =
-      "CSV load error. Check that your files are inside the <strong>data/</strong> folder, especially <strong>passer_given_rotation_expected_sideout.csv</strong>.";
-  }
-}
-
-function initials(name) {
-  return String(name)
-    .split(" ")
-    .map(w => w[0])
-    .slice(0, 2)
-    .join("");
-}
-
-function cleanName(x) {
-  return String(x ?? "").trim();
-}
-
-function normalizePlayerName(name) {
-  if (name === "Jasmin Saran") return "Jasmine Saran";
-  return name;
-}
-
-function displayPlayerName(name) {
-  if (name === "Jasmine Saran") return "Jasmin Saran";
-  return name;
-}
-
-function toNumber(x) {
-  const n = Number(x);
-  return Number.isFinite(n) ? n : 0;
-}
-
-function getXSO(row) {
-  if (!row) return 0;
-  if (row.xso !== undefined) return toNumber(row.xso);
-  if (row.expected_sideout_pct !== undefined) return toNumber(row.expected_sideout_pct);
-  return 0;
-}
-
-function getN(row) {
-  if (!row) return 0;
-  if (row.n !== undefined) return toNumber(row.n);
-  if (row.receptions !== undefined) return toNumber(row.receptions);
-  return 0;
-}
-
-function getSideouts(row) {
-  if (!row) return 0;
-  return toNumber(row.sideouts);
-}
-
-function uniqueValues(rows, col) {
-  return [...new Set(
-    rows
-      .map(r => cleanName(r[col]))
-      .filter(Boolean)
-  )].sort();
-}
-
-function playerImagePath(name) {
-  const fileName = PLAYER_IMAGE_FILES[name];
-  return fileName ? "images/" + fileName : "";
-}
-
-function rateColor(v) {
-  if (v === null || v === undefined) return "rate-na";
-  if (v >= 70) return "rate-hot";
-  if (v >= 58) return "rate-warm";
-  if (v >= 50) return "rate-mid";
-  return "rate-cool";
-}
-
-function rateHex(v) {
-  if (v >= 70) return "#22c55e";
-  if (v >= 58) return "#4ade80";
-  if (v >= 50) return "#fbbf24";
-  return "#f87171";
-}
-
-function aggregate(rows) {
-  let n = 0;
-  let sideouts = 0;
-
-  rows.forEach(row => {
-    n += getN(row);
-    sideouts += getSideouts(row);
-  });
-
-  if (n === 0) return null;
-
-  return {
-    n,
-    sideouts,
-    xso: sideouts / n * 100
-  };
-}
-
-function getOverallAverage() {
-  const agg = aggregate(DATA.setter);
-  return agg ? agg.xso : 0;
-}
-
-/* TOP SCORE BAR RENDERING */
-function renderEmptyContext(el, label) {
-  el.classList.remove("selected");
-  el.classList.add("plain");
-  el.innerHTML = `${label}: —`;
-}
-
-function renderRotationContext(el, rotation) {
-  if (!rotation) {
-    renderEmptyContext(el, "Rotation");
-    return;
-  }
-
-  el.classList.add("selected");
-  el.classList.remove("plain");
-
-  el.innerHTML = `
-    <div class="ctx-player-fallback">R</div>
-    <div class="ctx-text">
-      <div class="ctx-label">Rotation</div>
-      <div class="ctx-name">Rotation ${rotation}</div>
-    </div>
-  `;
-}
-
-function renderPlayerContext(el, role, name) {
-  if (!name) {
-    renderEmptyContext(el, role);
-    return;
-  }
-
-  el.classList.add("selected");
-  el.classList.remove("plain");
-
-  const imgPath = playerImagePath(name);
-  const shortName = name.split(" ")[0];
-
-  el.innerHTML = `
-    <img 
-      class="ctx-player-img"
-      src="${imgPath}" 
-      alt="${name}"
-      onerror="this.outerHTML='<div class=&quot;ctx-player-fallback&quot;>${initials(name)}</div>';"
-    >
-    <div class="ctx-text">
-      <div class="ctx-label">${role}</div>
-      <div class="ctx-name">${shortName}</div>
-    </div>
-  `;
-}
-
-function renderReceptionsContext(el, n) {
-  if (!n && n !== 0) {
-    renderEmptyContext(el, "Receptions");
-    return;
-  }
-
-  el.classList.add("selected");
-  el.classList.remove("plain");
-
-  el.innerHTML = `
-    <div class="ctx-player-fallback">#</div>
-    <div class="ctx-text">
-      <div class="ctx-label">Samples</div>
-      <div class="ctx-name">${n} receptions</div>
-    </div>
-  `;
-}
-
-/* BUILD COLUMNS */
-function buildRotations() {
-  const list = document.getElementById("rotationList");
-  list.innerHTML = "";
-
-  const rotations = [...new Set([
-    ...uniqueValues(DATA.setterGivenRotation, "rotation"),
-    ...uniqueValues(DATA.hitterGivenRotation, "rotation"),
-    ...uniqueValues(DATA.rotationPasserSetterHitter, "rotation"),
-    ...uniqueValues(DATA.passerGivenRotation, "rotation")
-  ])].sort((a, b) => Number(a) - Number(b));
-
-  rotations.forEach(rot => {
-    const rows = DATA.setterGivenRotation.filter(x =>
-      String(x.rotation) === String(rot)
-    );
-
-    const st = aggregate(rows);
-    const xso = st ? st.xso : null;
-    const n = st ? st.n : 0;
-
-    const card = makeCard("Rotation " + rot, "rotation", xso, n + " receptions");
-    card.setAttribute("data-rotation", rot);
-    card.addEventListener("click", () => selectRotation(rot));
-    list.appendChild(card);
-  });
-}
-
-function buildPassers() {
-  const list = document.getElementById("passerList");
-  list.innerHTML = "";
-
-  ALL_UCSD_PLAYERS.forEach(name => {
-    const dataName = normalizePlayerName(name);
-
-    let rows;
-
-    if (selRotation) {
-      rows = DATA.passerGivenRotation.filter(x =>
-        String(x.rotation) === String(selRotation) &&
-        x.passer === dataName
-      );
-    } else {
-      rows = DATA.passerSetter.filter(x =>
-        x.passer === dataName
-      );
-    }
-
-    const st = aggregate(rows);
-
-    if (selRotation && (!st || st.n < 2)) {
-      return;
-    }
-
-    let card;
-
-    if (!st) {
-      card = makeCard(name, "passer", null, "No passing data");
-    } else {
-      const note = selRotation
-        ? st.n + " receptions in R" + selRotation
-        : st.n + " receptions";
-
-      card = makeCard(name, "passer", st.xso, note);
-    }
-
-    card.addEventListener("click", () => selectPasser(name));
-    list.appendChild(card);
-  });
-}
-
-function buildSetters() {
-  const list = document.getElementById("setterList");
-  list.innerHTML = "";
-
-  TRUE_SETTERS.forEach(name => {
-    const row = DATA.setter.find(x => x.setter_group === name);
-
-    if (!row) {
-      const card = makeCard(name, "setter", null, "No setting data");
-      card.addEventListener("click", () => selectSetter(name));
-      list.appendChild(card);
-      return;
-    }
-
-    const xso = getXSO(row);
-    const n = getN(row);
-
-    const card = makeCard(name, "setter", xso, n + " receptions");
-    card.addEventListener("click", () => selectSetter(name));
-    list.appendChild(card);
-  });
-}
-
-function buildHitters() {
-  const list = document.getElementById("hitterList");
-  const note = document.getElementById("hitterNote");
-
-  list.innerHTML = "";
-
-  if (!selPasser || !selSetter) {
-    note.classList.add("visible");
-    note.innerHTML =
-      "Select a passer &amp; setter first to see<br>available hitter combinations";
-    return;
-  }
-
-  const dataPasser = normalizePlayerName(selPasser);
-
-  let combos = [];
-
-  if (selRotation) {
-    combos = DATA.rotationPasserSetterHitter
-      .filter(row =>
-        String(row.rotation) === String(selRotation) &&
-        row.passer === dataPasser &&
-        row.setter_group === selSetter
-      )
-      .sort((a, b) => getXSO(b) - getXSO(a));
-  } else {
-    combos = DATA.passerSetterHitter
-      .filter(row =>
-        row.passer === dataPasser &&
-        row.setter_group === selSetter
-      )
-      .sort((a, b) => getXSO(b) - getXSO(a));
-  }
-
-  if (!combos.length) {
-    note.classList.add("visible");
-    note.innerHTML =
-      "No hitter combinations found for this<br>passer, setter, and rotation.";
-    return;
-  }
-
-  note.classList.remove("visible");
-
-  combos.forEach(row => {
-    const hitter = displayPlayerName(row.hitter);
-    const xso = getXSO(row);
-    const n = getN(row);
-    const sideouts = getSideouts(row);
-
-    const card = makeCard(
-      hitter,
-      "hitter",
-      xso,
-      n + " recs · " + sideouts + " sideouts"
-    );
-
-    card.addEventListener("click", () => selectHitter(hitter));
-    list.appendChild(card);
-  });
-}
-
-function makeCard(name, role, xso, sub) {
-  const div = document.createElement("div");
-  div.className = "pcard";
-  div.setAttribute("data-name", name);
-
-  let avatarContent = "";
-
-  if (role === "rotation") {
-    avatarContent = "R";
-  } else {
-    const imgPath = playerImagePath(name);
-
-    avatarContent = `
-      <img 
-        src="${imgPath}" 
-        alt="${name}"
-        onerror="this.style.display='none'; this.parentElement.textContent='${initials(name)}';"
-      >
-    `;
-  }
-
-  const rateDisplay =
-    xso === null || xso === undefined
-      ? "N/A"
-      : xso.toFixed(1) + "%";
-
-  const rateClass =
-    xso === null || xso === undefined
-      ? "rate-na"
-      : rateColor(xso);
-
-  div.innerHTML = `
-    <div class="avatar ${role}">${avatarContent}</div>
-    <div class="pcard-info">
-      <div class="pcard-name">${name}</div>
-      <div class="pcard-stat">${sub}</div>
-    </div>
-    <div class="pcard-rate ${rateClass}">${rateDisplay}</div>
-    <div class="check-icon">✓</div>
-  `;
-
+// ══════════════════════════════════════
+// LINEUP BUILDER (Hannah's logic)
+// ══════════════════════════════════════
+function makeCard(name,role,xso,sub){
+  const div=document.createElement('div');
+  div.className='pcard';
+  div.setAttribute('data-name',name);
+  const av=role==='rotation'?'R':ini(name);
+  const rd=xso==null?'N/A':xso.toFixed(1)+'%';
+  const rc=xso==null?'rate-na':rateColor(xso);
+  div.innerHTML=`<div class="avatar ${role}">${av}</div>
+    <div class="pcard-info"><div class="pcard-name">${name}</div><div class="pcard-stat">${sub}</div></div>
+    <div class="pcard-rate ${rc}">${rd}</div><div class="check-icon">✓</div>`;
   return div;
 }
 
-/* SELECTION */
-function selectRotation(rot) {
-  selRotation = String(selRotation) === String(rot) ? null : rot;
-  selHitter = null;
-
-  if (selRotation && selPasser) {
-    const dataPasser = normalizePlayerName(selPasser);
-
-    const rows = DATA.passerGivenRotation.filter(x =>
-      String(x.rotation) === String(selRotation) &&
-      x.passer === dataPasser
-    );
-
-    const st = aggregate(rows);
-
-    if (!st || st.n < 2) {
-      selPasser = null;
-      selHitter = null;
-    }
-  }
-
-  refreshAll();
+function buildRotations(){
+  const list=document.getElementById('rotationList');list.innerHTML='';
+  const rots=[...new Set(D.setterGivenRotation.map(r=>r.rotation))].sort((a,b)=>Number(a)-Number(b));
+  rots.forEach(rot=>{
+    const rows=D.setterGivenRotation.filter(x=>String(x.rotation)===String(rot));
+    const st=agg(rows);
+    const card=makeCard('Rotation '+rot,'rotation',st?st.xso:null,(st?st.n:0)+' receptions');
+    card.setAttribute('data-rotation',rot);
+    card.addEventListener('click',()=>selectRotation(rot));
+    list.appendChild(card);
+  });
 }
 
-function selectPasser(name) {
-  selPasser = selPasser === name ? null : name;
-  selHitter = null;
-  refreshAll();
+function buildPassers(){
+  const list=document.getElementById('passerList');list.innerHTML='';
+  ALL_UCSD_PLAYERS.forEach(name=>{
+    let rows=selRotation
+      ?D.passerGivenRotation.filter(x=>String(x.rotation)===String(selRotation)&&x.passer===name)
+      :D.passerSetter.filter(x=>x.passer===name);
+    const st=agg(rows);
+    if(selRotation&&(!st||st.n<2))return;
+    const note=selRotation?st.n+' recs in R'+selRotation:(st?st.n+' receptions':'No data');
+    const card=makeCard(name,'passer',st?st.xso:null,note);
+    card.addEventListener('click',()=>selectPasser(name));
+    list.appendChild(card);
+  });
 }
 
-function selectSetter(name) {
-  selSetter = selSetter === name ? null : name;
-  selHitter = null;
-  refreshAll();
+function buildSetters(){
+  const list=document.getElementById('setterList');list.innerHTML='';
+  TRUE_SETTERS.forEach(name=>{
+    const row=D.setter.find(x=>x.setter_group===name);
+    const card=makeCard(name,'setter',row?getXSO(row):null,row?getN(row)+' receptions':'No data');
+    card.addEventListener('click',()=>selectSetter(name));
+    list.appendChild(card);
+  });
 }
 
-function selectHitter(name) {
-  selHitter = selHitter === name ? null : name;
-  refreshAll();
+function buildHitters(){
+  const list=document.getElementById('hitterList');
+  const note=document.getElementById('hitterNote');
+  list.innerHTML='';
+  if(!selPasser||!selSetter){note.classList.add('visible');note.innerHTML='Select a passer &amp; setter first to see available hitter combinations';return;}
+  const combos=D.passerSetterHitter.filter(r=>r.passer===selPasser&&r.setter_group===selSetter).sort((a,b)=>getXSO(b)-getXSO(a));
+  if(!combos.length){note.classList.add('visible');note.innerHTML='No hitter combinations found for this passer + setter.';return;}
+  note.classList.remove('visible');
+  combos.forEach(row=>{
+    const card=makeCard(row.hitter,'hitter',getXSO(row),getN(row)+' recs · '+getSO(row)+' sideouts');
+    card.addEventListener('click',()=>selectHitter(row.hitter));
+    list.appendChild(card);
+  });
 }
 
-function clearRotation() {
-  selRotation = null;
-  selHitter = null;
-  refreshAll();
+function selectRotation(rot){selRotation=String(selRotation)===String(rot)?null:rot;selHitter=null;refreshAll();}
+function selectPasser(n){selPasser=selPasser===n?null:n;selHitter=null;refreshAll();}
+function selectSetter(n){selSetter=selSetter===n?null:n;selHitter=null;refreshAll();}
+function selectHitter(n){selHitter=selHitter===n?null:n;refreshAll();}
+function clearRotation(){selRotation=null;selHitter=null;refreshAll();}
+function clearPasser(){selPasser=null;selHitter=null;refreshAll();}
+function clearSetter(){selSetter=null;selHitter=null;refreshAll();}
+function clearHitter(){selHitter=null;refreshAll();}
+function clearAll(){selRotation=null;selPasser=null;selSetter=null;selHitter=null;refreshAll();}
+
+function hlList(id,sel,cls){
+  document.querySelectorAll('#'+id+' .pcard').forEach(c=>{
+    const n=c.getAttribute('data-name'),r=c.getAttribute('data-rotation');
+    const match=sel?(r?String(r)===String(sel):n===sel):false;
+    c.classList.toggle('selected',match);c.classList.toggle(cls,match);
+  });
 }
 
-function clearPasser() {
-  selPasser = null;
-  selHitter = null;
-  refreshAll();
+function findResult(){
+  const hasR=!!selRotation,hasP=!!selPasser,hasS=!!selSetter,hasH=!!selHitter;
+  let row=null;
+  if(hasP&&hasS&&hasH){row=D.passerSetterHitter.find(x=>x.passer===selPasser&&x.setter_group===selSetter&&x.hitter===selHitter);}
+  else if(hasS&&hasH){row=D.setterHitter.find(x=>x.setter_group===selSetter&&x.hitter===selH);}
+  else if(hasR&&hasP&&hasS){row=D.passerSetterGivenRotation.find(x=>String(x.rotation)===String(selRotation)&&x.passer===selPasser&&x.setter_group===selSetter);}
+  else if(hasP&&hasS){row=D.passerSetter.find(x=>x.passer===selPasser&&x.setter_group===selSetter);}
+  else if(hasR&&hasS){row=D.setterGivenRotation.find(x=>String(x.rotation)===String(selRotation)&&x.setter_group===selSetter);}
+  else if(hasS){row=D.setter.find(x=>x.setter_group===selSetter);}
+  else if(hasP&&hasR){row=agg(D.passerGivenRotation.filter(x=>String(x.rotation)===String(selRotation)&&x.passer===selPasser));if(row&&row.n<2)row=null;}
+  else if(hasP){row=agg(D.passerSetter.filter(x=>x.passer===selPasser));}
+  else if(hasR){row=agg(D.setterGivenRotation.filter(x=>String(x.rotation)===String(selRotation)));}
+  else{row=agg(D.setter);}
+  return row;
 }
 
-function clearSetter() {
-  selSetter = null;
-  selHitter = null;
-  refreshAll();
+function refreshScore(){
+  const pctEl=document.getElementById('scorePct');
+  const metaEl=document.getElementById('scoreMeta');
+  const vsEl=document.getElementById('vsAvg');
+  const bar=document.getElementById('scoreBar');
+  const ctxRot=document.getElementById('ctxRotation');
+  const ctxP=document.getElementById('ctxPasser');
+  const ctxS=document.getElementById('ctxSetter');
+  const ctxH=document.getElementById('ctxHitter');
+  const ctxR=document.getElementById('ctxRec');
+
+  // update context chips
+  [ctxRot,ctxP,ctxS,ctxH,ctxR].forEach(el=>{el.classList.remove('selected');el.classList.add('plain');});
+  if(selRotation){ctxRot.classList.add('selected','rotation-chip');ctxRot.classList.remove('plain');ctxRot.innerHTML=`<div class="ctx-player-fallback">R</div><div class="ctx-text"><div class="ctx-label">Rotation</div><div class="ctx-name">Rotation ${selRotation}</div></div>`;}else{ctxRot.innerHTML='Rotation: —';}
+  if(selPasser){ctxP.classList.add('selected','passer-chip');ctxP.classList.remove('plain');ctxP.innerHTML=`<div class="ctx-player-fallback">${ini(selPasser)}</div><div class="ctx-text"><div class="ctx-label">Passer</div><div class="ctx-name">${selPasser.split(' ')[0]}</div></div>`;}else{ctxP.innerHTML='Passer: —';}
+  if(selSetter){ctxS.classList.add('selected','setter-chip');ctxS.classList.remove('plain');ctxS.innerHTML=`<div class="ctx-player-fallback">${ini(selSetter)}</div><div class="ctx-text"><div class="ctx-label">Setter</div><div class="ctx-name">${selSetter.split(' ')[0]}</div></div>`;}else{ctxS.innerHTML='Setter: —';}
+  if(selHitter){ctxH.classList.add('selected','hitter-chip');ctxH.classList.remove('plain');ctxH.innerHTML=`<div class="ctx-player-fallback">${ini(selHitter)}</div><div class="ctx-text"><div class="ctx-label">Hitter</div><div class="ctx-name">${selHitter.split(' ')[0]}</div></div>`;}else{ctxH.innerHTML='Hitter: —';}
+
+  const row=findResult();
+  if(!row){pctEl.textContent='No Data';pctEl.style.color='var(--muted)';metaEl.textContent='No data for this combination';vsEl.textContent='';bar.classList.add('has-result');return;}
+  const xso=getXSO(row),n=getN(row),s=getSO(row),diff=xso-TEAM_AVG_PCT;
+  pctEl.textContent=xso.toFixed(1)+'%';pctEl.style.color=rateHex(xso);pctEl.classList.add('lit');setTimeout(()=>pctEl.classList.remove('lit'),200);
+  const parts=[];if(selRotation)parts.push('R'+selRotation);if(selPasser)parts.push(selPasser.split(' ')[0]);if(selSetter)parts.push(selSetter.split(' ')[0]);if(selHitter)parts.push(selHitter.split(' ')[0]);
+  metaEl.innerHTML=(parts.length?'<strong>'+parts.join(' → ')+'</strong> · ':'')+(s+'/'+n+' sideouts');
+  vsEl.textContent=(diff>=0?'+':'')+diff.toFixed(1)+'pp vs team avg';vsEl.className='vs-avg '+(diff>=0?'above':'below');
+  if(n){ctxR.classList.add('selected','rec-chip');ctxR.classList.remove('plain');ctxR.innerHTML=`<div class="ctx-player-fallback">#</div><div class="ctx-text"><div class="ctx-label">Samples</div><div class="ctx-name">${n} receptions</div></div>`;}
+  bar.classList.add('has-result');
 }
 
-function clearHitter() {
-  selHitter = null;
-  refreshAll();
-}
-
-function clearAll() {
-  selRotation = null;
-  selPasser = null;
-  selSetter = null;
-  selHitter = null;
-  refreshAll();
-}
-
-function refreshAll() {
+function refreshAll(){
   buildPassers();
-
-  highlightRotations();
-  highlightPassers();
-  highlightSetters();
-
+  hlList('rotationList',selRotation,'rotation-sel');
+  hlList('passerList',selPasser,'passer-sel');
+  hlList('setterList',selSetter,'setter-sel');
   buildHitters();
-  highlightHitters();
-
+  hlList('hitterList',selHitter,'hitter-sel');
   refreshScore();
 }
 
-/* HIGHLIGHTING */
-function highlightRotations() {
-  document.querySelectorAll("#rotationList .pcard").forEach(card => {
-    const rot = card.getAttribute("data-rotation");
-    card.classList.toggle("selected", String(rot) === String(selRotation));
-    card.classList.toggle("rotation-sel", String(rot) === String(selRotation));
+buildRotations();buildPassers();buildSetters();buildHitters();refreshScore();
+
+// ══════════════════════════════════════
+// PLAYER EXPLORER
+// ══════════════════════════════════════
+let selP2=null;
+const pList=document.getElementById('playerList');
+PLAYERS.forEach((p,i)=>{
+  const row=document.createElement('div');row.className='p-row';row.id='pr-'+i;
+  row.innerHTML=`<div class="p-init">${ini(p.name)}</div><div class="p-name">${p.name}</div><span class="stat-pill ${pilCls(p.xso)}">${p.xso.toFixed(1)}%</span>`;
+  row.addEventListener('click',()=>{
+    if(selP2!==null)document.getElementById('pr-'+selP2)?.classList.remove('active');
+    selP2=i;document.getElementById('pr-'+i).classList.add('active');renderDetail(p);
   });
+  pList.appendChild(row);
+});
+
+function renderDetail(p){
+  const diff=p.xso-TEAM_AVG_PCT;
+  const dStr=(diff>=0?'+':'')+diff.toFixed(1)+'%';
+  const dColor=diff>=0?'var(--green)':'var(--red)';
+  const rotHTML=p.by_rotation.map(r=>{const w=Math.min(98,Math.round((r.pct/85)*100));return`<div class="rot-row"><div class="rot-lbl">Rot ${r.r}</div><div class="rot-track"><div class="rot-fill" style="width:${w}%;background:${rateHex(r.pct)}">${r.pct.toFixed(1)}%</div></div><div class="rot-n">n=${r.n}</div></div>`;}).join('');
+  const pqHTML=PQ_ORDER.filter(q=>p.by_pq[q]).map(q=>{const d=p.by_pq[q];return`<div class="pq-cell"><div class="pq-lbl" style="color:${PQ_COLORS[q]}">${q}</div><div class="pq-val">${d.pct.toFixed(1)}%</div><div class="pq-n">n=${d.n}</div></div>`;}).join('');
+  const psRows=PASSER_SETTER.filter(r=>r.passer===p.name||r.setter===p.name).sort((a,b)=>b.xso-a.xso).slice(0,5);
+  const psHTML=psRows.length?psRows.map(r=>{const combo=r.passer===p.name?`w/ <b>${r.setter}</b> setting`:`w/ <b>${r.passer}</b> passing`;return`<div class="hitter-row"><div class="hitter-name" style="font-size:.78rem">${combo}</div><div class="hitter-bar-wrap"><div class="hitter-bar" style="width:${Math.round((r.xso/90)*100)}%;background:${rateHex(r.xso)}"></div></div><div class="hitter-pct" style="color:${rateHex(r.xso)}">${r.xso.toFixed(1)}%</div><div class="hitter-n">n=${r.n}</div></div>`;}).join(''):'<div style="color:var(--muted);font-size:.8rem">No combo data</div>';
+  document.getElementById('detailCard').innerHTML=`
+    <div class="detail-hero"><div class="detail-avatar">${ini(p.name)}</div><div><h2>${p.name}</h2><p>${p.receptions} receptions · 2024–25</p></div></div>
+    <div class="detail-stats">
+      <div class="dstat"><div class="dstat-val">${p.xso.toFixed(1)}%</div><div class="dstat-label">Side-Out Rate</div></div>
+      <div class="dstat"><div class="dstat-val" style="color:${dColor}">${dStr}</div><div class="dstat-label">vs Team Avg</div></div>
+      <div class="dstat"><div class="dstat-val">${p.receptions}</div><div class="dstat-label">Receptions</div></div>
+    </div>
+    <div class="detail-section"><div class="dsec-title">By Rotation</div><div class="rot-bars">${rotHTML}</div></div>
+    <div class="detail-section"><div class="dsec-title">By Pass Quality</div><div class="pq-grid">${pqHTML}</div></div>
+    <div class="detail-section"><div class="dsec-title">Best Combos</div><div class="hitter-rows">${psHTML}</div></div>`;
 }
 
-function highlightPassers() {
-  document.querySelectorAll("#passerList .pcard").forEach(card => {
-    const name = card.getAttribute("data-name");
-    card.classList.toggle("selected", name === selPasser);
-    card.classList.toggle("passer-sel", name === selPasser);
-  });
+// ══════════════════════════════════════
+// COMBO STATS
+// ══════════════════════════════════════
+const passers2=[...new Set(PASSER_SETTER.map(r=>r.passer))].sort();
+const setters2=[...new Set(PASSER_SETTER.map(r=>r.setter))].sort();
+const hitters2=[...new Set(SETTER_HITTER.map(r=>r.hitter))].sort();
+const sP2=document.getElementById('selPasser2'),sS2=document.getElementById('selSetter2'),sH2=document.getElementById('selHitter2');
+passers2.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;sP2.appendChild(o);});
+setters2.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;sS2.appendChild(o);});
+hitters2.forEach(h=>{const o=document.createElement('option');o.value=h;o.textContent=h;sH2.appendChild(o);});
+
+function updateCombo(){
+  const passer=sP2.value,setter=sS2.value,hitter=sH2.value;
+  const hero=document.getElementById('comboHero');
+  if(!passer||!setter){hero.className='result-empty';hero.innerHTML='<div class="e-icon">📊</div><p>Select passer + setter to see result</p>';return;}
+  let xso=null,n,s,label;
+  if(hitter){const row=PSH.find(r=>r.passer===passer&&r.setter===setter&&r.hitter===hitter);if(row){xso=row.xso;n=row.n;s=row.s;label=`${passer} → ${setter} → ${hitter}`;}}
+  else{const row=PASSER_SETTER.find(r=>r.passer===passer&&r.setter===setter);if(row){xso=row.xso;n=row.n;s=row.s;label=`${passer} passing to ${setter}`;}}
+  if(xso!==null){
+    const diff=xso-TEAM_AVG_PCT,dc=diff>=0?'#22c55e':'#ef4444',ds=(diff>=0?'+':'')+diff.toFixed(1)+'%';
+    hero.className='result-hero';
+    hero.innerHTML=`<div class="big-pct" style="color:${rateHex(xso)}">${xso.toFixed(1)}%</div><div class="big-label">Expected Side-Out %</div><div class="big-sub">${label}</div><div style="margin-top:1rem;display:flex;gap:1.5rem;justify-content:center"><div style="text-align:center"><div style="font-family:'Bebas Neue',sans-serif;font-size:1.35rem;color:${dc}">${ds}</div><div style="font-size:.68rem;color:var(--muted)">vs team avg</div></div><div style="text-align:center"><div style="font-family:'Bebas Neue',sans-serif;font-size:1.35rem">${s}/${n}</div><div style="font-size:.68rem;color:var(--muted)">sideouts/recs</div></div></div>`;
+  }else{hero.className='result-empty';hero.innerHTML='<div class="e-icon">🔍</div><p>No data for this combination</p>';}
+  // rotation table
+  const rotLabel=document.getElementById('comboRotLabel'),rotBody=document.getElementById('comboRotBody');
+  const rotRows=PASSER_SETTER_ROTATION.filter(r=>r.passer===passer&&r.setter===setter).sort((a,b)=>b.xso-a.xso);
+  rotLabel.textContent=rotRows.length?rotRows.length+' rotations':'—';
+  rotBody.innerHTML=rotRows.length?`<table class="rot-table"><thead><tr><th>Rotation</th><th>xSO%</th><th>Sideouts</th><th>Recs</th></tr></thead><tbody>${rotRows.map(r=>`<tr><td>Rotation ${r.r}</td><td class="td-pct" style="color:${rateHex(r.xso)}">${r.xso.toFixed(1)}%</td><td>${r.s}</td><td>${r.n}</td></tr>`).join('')}</tbody></table>`:'<div style="color:var(--muted);font-size:.83rem;text-align:center;padding:.5rem">No rotation data for this pair</div>';
+  // hitters
+  const hLabel=document.getElementById('comboHitterLabel'),hBody=document.getElementById('comboHitterBody');
+  if(setter){
+    const hRows=SETTER_HITTER.filter(r=>r.setter===setter).sort((a,b)=>b.xso-a.xso);
+    hLabel.textContent=setter+' · '+hRows.length+' hitters';
+    hBody.innerHTML=hRows.map(r=>`<div class="hitter-row"><div class="hitter-name">${r.hitter}</div><div class="hitter-bar-wrap"><div class="hitter-bar" style="width:${Math.round((r.xso/90)*100)}%;background:${rateHex(r.xso)}"></div></div><div class="hitter-pct" style="color:${rateHex(r.xso)}">${r.xso.toFixed(1)}%</div><div class="hitter-n">n=${r.n}</div></div>`).join('');
+  }
 }
 
-function highlightSetters() {
-  document.querySelectorAll("#setterList .pcard").forEach(card => {
-    const name = card.getAttribute("data-name");
-    card.classList.toggle("selected", name === selSetter);
-    card.classList.toggle("setter-sel", name === selSetter);
-  });
+// ══════════════════════════════════════
+// SETTER COMPARISON
+// ══════════════════════════════════════
+const sg=document.getElementById('setterGrid');
+SETTER_XSO.forEach(sx=>{
+  const rotRows=SETTER_ROTATION.filter(r=>r.setter===sx.setter).sort((a,b)=>a.r-b.r);
+  const hRows=SETTER_HITTER.filter(r=>r.setter===sx.setter).sort((a,b)=>b.xso-a.xso).slice(0,6);
+  const color=SETTER_COLORS[sx.setter]||'#888';
+  const col=document.createElement('div');
+  col.innerHTML=`
+    <div class="setter-hero"><div class="setter-init" style="background:${color};color:#fff">${ini(sx.setter)}</div><div><div class="setter-name">${sx.setter}</div><div class="setter-rate">${sx.xso.toFixed(1)}% overall · ${sx.n} recs</div></div></div>
+    <div class="card" style="margin-bottom:.9rem"><div class="card-head"><h3>By Rotation</h3></div><div class="card-body"><div class="rot-vs">${rotRows.map(r=>{const w=Math.min(98,Math.round((r.xso/80)*100));return`<div class="rv-row"><div class="rv-lbl">Rot ${r.r}</div><div class="rv-track"><div class="rv-fill" style="width:${w}%;background:${color};padding-left:8px">${r.xso.toFixed(1)}%</div></div><div class="rv-n">n=${r.n}</div></div>`;}).join('')}</div></div></div>
+    <div class="card"><div class="card-head"><h3>Best Hitters</h3></div><div class="card-body"><div class="hitter-rows">${hRows.map(r=>`<div class="hitter-row"><div class="hitter-name">${r.hitter}</div><div class="hitter-bar-wrap"><div class="hitter-bar" style="width:${Math.round((r.xso/90)*100)}%;background:${rateHex(r.xso)}"></div></div><div class="hitter-pct" style="color:${rateHex(r.xso)}">${r.xso.toFixed(1)}%</div><div class="hitter-n">n=${r.n}</div></div>`).join('')}</div></div></div>`;
+  sg.appendChild(col);
+});
+const h2h=document.getElementById('h2hGrid');
+const metrics=[
+  {label:'Overall xSO%',v1:SETTER_XSO[0].xso,v2:SETTER_XSO[1].xso,fmt:v=>v.toFixed(1)+'%'},
+  {label:'Total Receptions',v1:SETTER_XSO[0].n,v2:SETTER_XSO[1].n,fmt:v=>v.toLocaleString()},
+  {label:'Best Rotation xSO%',v1:Math.max(...SETTER_ROTATION.filter(r=>r.setter===SETTER_XSO[0].setter).map(r=>r.xso)),v2:Math.max(...SETTER_ROTATION.filter(r=>r.setter===SETTER_XSO[1].setter).map(r=>r.xso)),fmt:v=>v.toFixed(1)+'%'},
+  {label:'Worst Rotation xSO%',v1:Math.min(...SETTER_ROTATION.filter(r=>r.setter===SETTER_XSO[0].setter).map(r=>r.xso)),v2:Math.min(...SETTER_ROTATION.filter(r=>r.setter===SETTER_XSO[1].setter).map(r=>r.xso)),fmt:v=>v.toFixed(1)+'%'},
+];
+metrics.forEach(m=>{
+  const w1=m.v1>=m.v2;
+  h2h.innerHTML+=`<div class="h2h-cell"><div class="h2h-player" style="color:${SETTER_COLORS[SETTER_XSO[0].setter]}">${SETTER_XSO[0].setter}</div><div class="h2h-val" style="color:${w1?'var(--green)':'var(--muted)'}">${m.fmt(m.v1)}</div><div class="h2h-sub">${m.label}</div></div><div class="h2h-cell"><div class="h2h-player" style="color:${SETTER_COLORS[SETTER_XSO[1].setter]}">${SETTER_XSO[1].setter}</div><div class="h2h-val" style="color:${!w1?'var(--green)':'var(--muted)'}">${m.fmt(m.v2)}</div><div class="h2h-sub">${m.label}</div></div>`;
+});
+
+// ══════════════════════════════════════
+// LEADERBOARD
+// ══════════════════════════════════════
+let lbView='passers';
+function setLbView(v,btn){lbView=v;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderLb();}
+function renderLb(){
+  const t=document.getElementById('lbTable');
+  if(lbView==='passers'){
+    const rows=[...PLAYERS].sort((a,b)=>b.xso-a.xso);
+    t.innerHTML=`<thead><tr><th>#</th><th>Player</th><th>Recs</th><th></th><th>xSO%</th><th>vs Avg</th></tr></thead><tbody>${rows.map((p,i)=>{const diff=p.xso-TEAM_AVG_PCT,ds=(diff>=0?'+':'')+diff.toFixed(1)+'%',dc=diff>=0?'var(--green)':'var(--red)';return`<tr><td class="td-rank ${i<3?'gold':''}">${i+1}</td><td class="td-name">${p.name}</td><td>${p.receptions}</td><td><div class="td-bar-wrap"><div class="td-bar-fill" style="width:${Math.round((p.xso/80)*100)}%;background:${rateHex(p.xso)}"></div></div></td><td class="td-pct" style="color:${rateHex(p.xso)}">${p.xso.toFixed(1)}%</td><td style="color:${dc};font-weight:600">${ds}</td></tr>`;}).join('')}</tbody>`;
+  }else if(lbView==='passer-setter'){
+    const rows=[...PASSER_SETTER].sort((a,b)=>b.xso-a.xso);
+    t.innerHTML=`<thead><tr><th>#</th><th>Passer</th><th>Setter</th><th>Recs</th><th></th><th>xSO%</th></tr></thead><tbody>${rows.map((r,i)=>`<tr><td class="td-rank ${i<3?'gold':''}">${i+1}</td><td class="td-name">${r.passer}</td><td>${r.setter}</td><td>${r.n}</td><td><div class="td-bar-wrap"><div class="td-bar-fill" style="width:${Math.round((r.xso/90)*100)}%;background:${rateHex(r.xso)}"></div></div></td><td class="td-pct" style="color:${rateHex(r.xso)}">${r.xso.toFixed(1)}%</td></tr>`).join('')}</tbody>`;
+  }else{
+    const rows=[...SETTER_HITTER].sort((a,b)=>b.xso-a.xso);
+    t.innerHTML=`<thead><tr><th>#</th><th>Setter</th><th>Hitter</th><th>Recs</th><th></th><th>xSO%</th></tr></thead><tbody>${rows.map((r,i)=>`<tr><td class="td-rank ${i<3?'gold':''}">${i+1}</td><td class="td-name">${r.setter}</td><td>${r.hitter}</td><td>${r.n}</td><td><div class="td-bar-wrap"><div class="td-bar-fill" style="width:${Math.round((r.xso/90)*100)}%;background:${rateHex(r.xso)}"></div></div></td><td class="td-pct" style="color:${rateHex(r.xso)}">${r.xso.toFixed(1)}%</td></tr>`).join('')}</tbody>`;
+  }
 }
-
-function highlightHitters() {
-  document.querySelectorAll("#hitterList .pcard").forEach(card => {
-    const name = card.getAttribute("data-name");
-    card.classList.toggle("selected", name === selHitter);
-    card.classList.toggle("hitter-sel", name === selHitter);
-  });
-}
-
-/* LOOKUP */
-function findResult() {
-  const hasR = !!selRotation;
-  const hasP = !!selPasser;
-  const hasS = !!selSetter;
-  const hasH = !!selHitter;
-
-  const dataPasser = normalizePlayerName(selPasser);
-  const dataHitter = normalizePlayerName(selHitter);
-
-  let row = null;
-  let source = "";
-
-  if (hasR && hasP && hasS && hasH) {
-    row = DATA.rotationPasserSetterHitter.find(x =>
-      String(x.rotation) === String(selRotation) &&
-      x.passer === dataPasser &&
-      x.setter_group === selSetter &&
-      x.hitter === dataHitter
-    );
-    source = "rotation_passer_setter_hitter_xso.csv";
-  }
-
-  else if (hasP && hasS && hasH) {
-    row = DATA.passerSetterHitter.find(x =>
-      x.passer === dataPasser &&
-      x.setter_group === selSetter &&
-      x.hitter === dataHitter
-    );
-    source = "passer_setter_hitter_xso_all_combinations.csv";
-  }
-
-  else if (hasR && hasS && hasH) {
-    row = DATA.rotationSetterHitter.find(x =>
-      String(x.rotation) === String(selRotation) &&
-      x.setter_group === selSetter &&
-      x.hitter === dataHitter
-    );
-    source = "rotation_setter_hitter_xso.csv";
-  }
-
-  else if (hasS && hasH) {
-    row = DATA.setterHitter.find(x =>
-      x.setter_group === selSetter &&
-      x.hitter === dataHitter
-    );
-    source = "setter_hitter_xso.csv";
-  }
-
-  else if (hasR && hasP && hasS) {
-    row = DATA.passerSetterGivenRotation.find(x =>
-      String(x.rotation) === String(selRotation) &&
-      x.passer === dataPasser &&
-      x.setter_group === selSetter
-    );
-    source = "passer_setter_given_rotation_expected_sideout.csv";
-  }
-
-  else if (hasP && hasS) {
-    row = DATA.passerSetter.find(x =>
-      x.passer === dataPasser &&
-      x.setter_group === selSetter
-    );
-    source = "passer_setter_xso.csv";
-  }
-
-  else if (hasR && hasP && hasH) {
-    row = DATA.hitterPasserGivenRotation.find(x =>
-      String(x.rotation) === String(selRotation) &&
-      x.passer === dataPasser &&
-      x.hitter === dataHitter
-    );
-    source = "hitter_passer_given_rotation_expected_sideout.csv";
-  }
-
-  else if (hasR && hasS) {
-    row = DATA.setterGivenRotation.find(x =>
-      String(x.rotation) === String(selRotation) &&
-      x.setter_group === selSetter
-    );
-    source = "setter_given_rotation_expected_sideout.csv";
-  }
-
-  else if (hasR && hasH) {
-    row = DATA.hitterGivenRotation.find(x =>
-      String(x.rotation) === String(selRotation) &&
-      x.hitter === dataHitter
-    );
-    source = "hitter_given_rotation_expected_sideout.csv";
-  }
-
-  else if (hasS) {
-    row = DATA.setter.find(x =>
-      x.setter_group === selSetter
-    );
-    source = "setter_xso.csv";
-  }
-
-  else if (hasH) {
-    row = aggregate(DATA.setterHitter.filter(x =>
-      x.hitter === dataHitter
-    ));
-    source = "setter_hitter_xso.csv";
-  }
-
-  else if (hasP && hasR) {
-    row = aggregate(DATA.passerGivenRotation.filter(x =>
-      String(x.rotation) === String(selRotation) &&
-      x.passer === dataPasser
-    ));
-
-    if (!row || row.n < 2) {
-      row = null;
-    }
-
-    source = "passer_given_rotation_expected_sideout.csv";
-  }
-
-  else if (hasP) {
-    row = aggregate(DATA.passerSetter.filter(x =>
-      x.passer === dataPasser
-    ));
-    source = "passer_setter_xso.csv";
-  }
-
-  else if (hasR) {
-    row = aggregate(DATA.setterGivenRotation.filter(x =>
-      String(x.rotation) === String(selRotation)
-    ));
-    source = "setter_given_rotation_expected_sideout.csv";
-  }
-
-  else {
-    row = aggregate(DATA.setter);
-    source = "setter_xso.csv";
-  }
-
-  return { row, source };
-}
-
-/* SCORE DISPLAY */
-function refreshScore() {
-  const pctEl   = document.getElementById("scorePct");
-  const metaEl  = document.getElementById("scoreMeta");
-  const vsEl    = document.getElementById("vsAvg");
-  const bar     = document.getElementById("scoreBar");
-
-  const ctxRot  = document.getElementById("ctxRotation");
-  const ctxP    = document.getElementById("ctxPasser");
-  const ctxS    = document.getElementById("ctxSetter");
-  const ctxH    = document.getElementById("ctxHitter");
-  const ctxR    = document.getElementById("ctxRec");
-
-  renderRotationContext(ctxRot, selRotation);
-  renderPlayerContext(ctxP, "Passer", selPasser);
-  renderPlayerContext(ctxS, "Setter", selSetter);
-  renderPlayerContext(ctxH, "Hitter", selHitter);
-
-  const result = findResult();
-  const row = result.row;
-
-  if (!row) {
-    pctEl.textContent = "No Data";
-    pctEl.style.fontSize = "2.3rem";
-    pctEl.style.color = "var(--muted)";
-
-    metaEl.innerHTML = "No Data on Grouping";
-    vsEl.textContent = "";
-
-    renderEmptyContext(ctxR, "Receptions");
-
-    bar.classList.add("has-result");
-    return;
-  }
-
-  const xso = getXSO(row);
-  const n = getN(row);
-  const sideouts = getSideouts(row);
-  const diff = xso - TEAM_AVG;
-
-  pctEl.style.fontSize = "";
-  pctEl.textContent = xso.toFixed(1) + "%";
-  pctEl.style.color = rateHex(xso);
-  pctEl.classList.add("lit");
-  setTimeout(() => pctEl.classList.remove("lit"), 200);
-
-  metaEl.innerHTML = buildMetaText(sideouts, n, result.source);
-
-  vsEl.textContent = (diff >= 0 ? "+" : "") + diff.toFixed(1) + "pp vs team avg";
-  vsEl.className = "vs-avg " + (diff >= 0 ? "above" : "below");
-
-  renderReceptionsContext(ctxR, n);
-
-  bar.classList.add("has-result");
-}
-
-function buildMetaText(sideouts, n, source) {
-  const parts = [];
-
-  if (selRotation) parts.push(`<strong>R${selRotation}</strong>`);
-  if (selPasser) parts.push(`<strong>${selPasser.split(" ")[0]}</strong>`);
-  if (selSetter) parts.push(`<strong>${selSetter.split(" ")[0]}</strong>`);
-  if (selHitter) parts.push(`<strong>${selHitter.split(" ")[0]}</strong>`);
-
-  const combo = parts.length ? parts.join(" → ") : "Overall true-setter average";
-
-  return `${combo} · ${sideouts}/${n} sideouts · ${source}`;
-}
-
-init();
+renderLb();
 </script>
-
 </body>
 </html>
